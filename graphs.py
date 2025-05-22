@@ -4,6 +4,11 @@ import matplotlib.pyplot as plt
 import os
 from datetime import datetime, timedelta
 
+while True:
+    rok = int(input("2002 nebo 2019? "))
+    if rok in [2002, 2019]:
+        break
+
 def den_datum(den, rok, *p):
     prvni_den = datetime(rok, 1, 1)
     if p:
@@ -22,7 +27,7 @@ def datum_den(datum):
 def dates(s, inp, out, x):
     for i in range(len(inp.variables['valid_time'][:])):
         if (i + x) % 15 == 0:
-            out.append(den_datum(datum_den(s) + i + x, 2019))
+            out.append(den_datum(datum_den(s) + i + x, rok))
     x += len(inp.variables['valid_time'][:])
     return out, x
 
@@ -48,7 +53,10 @@ def prumeruj_po_8(data):
 
 def euf():
     folder = "./"
-    files = ["eu6.nc", "eu7.nc", "eu8.nc", "eu9.nc"]
+    if rok == 2019:
+        files = ["eu6.nc", "eu7.nc", "eu8.nc", "eu9.nc"]
+    if rok == 2002:
+        files = ["eu208.nc", "eu209.nc", "eu210.nc", "eu211.nc"]
     data = []
     time_labels = []
     x = 0
@@ -57,14 +65,17 @@ def euf():
         dataset = Dataset(os.path.join(folder, f))
         var_data = dataset.variables['u'][:]
         pressure_levels = dataset.variables['pressure_level'][:]
-        time_labels, z = dates(f"01/06/2019", dataset, time_labels, z)
+        time_labels, z = dates(f"01/06/{rok}", dataset, time_labels, z)
         x, data = av(var_data, data, x)
     print("euf done")
     return data, time_labels, pressure_levels
 
 def etf():
     folder = "./"
-    files = ["et6.nc", "et7.nc", "et8.nc", "et9.nc"]
+    if rok == 2019:
+        files = ["et6.nc", "et7.nc", "et8.nc", "et9.nc"]
+    if rok == 2002:
+        files = ["et208.nc", "et209.nc", "et210.nc", "et211.nc"]
     data = []
     x = 0
     for f in files:
@@ -168,7 +179,10 @@ for ax, title, data, vmin_, vmax_ in zip(axs, tituly, data_sady, vmin_sady, vmax
     fig.colorbar(cbar, ax=ax)
 
 plt.tight_layout()
-fig.savefig("vse.png")
+if rok == 2019:
+    fig.savefig("vse_2019.png")
+if rok == 2002:
+    fig.savefig("vse_2002.png")
 plt.close(fig)
 
 fig_diff, axs_diff = plt.subplots(2, 1, figsize=(10, 12))
@@ -184,5 +198,8 @@ for ax, title, data, vlim in zip(axs_diff, tituly_diff, data_diff, vlims_diff):
     fig_diff.colorbar(cbar, ax=ax)
 
 plt.tight_layout()
-fig_diff.savefig("rem.png")
+if rok == 2019:
+    fig_diff.savefig("rem_2019.png")
+if rok == 2002:
+    fig_diff.savefig("rem_2002.png")
 plt.close(fig_diff)
