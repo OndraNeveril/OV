@@ -68,7 +68,7 @@ def prumeruj_po_4(data):
     return np.array(nove_data)
 
 def euf():
-    folder = "./"
+    folder = "./Era_2019" if rok == 2019 else "./Era_2002"
     files = ["eu6.nc", "eu7.nc", "eu8.nc", "eu9.nc"] if rok == 2019 else ["eu208.nc", "eu209.nc", "eu210.nc", "eu211.nc"]
     data = []
     time_labels = []
@@ -83,7 +83,7 @@ def euf():
     return data, time_labels, pressure_levels
 
 def etf():
-    folder = "./"
+    folder = "./Era_2019" if rok == 2019 else "./Era_2002"
     files = ["et6.nc", "et7.nc", "et8.nc", "et9.nc"] if rok == 2019 else ["et208.nc", "et209.nc", "et210.nc", "et211.nc"]
     data = []
     x = 0
@@ -155,6 +155,7 @@ def vykresli(ax, data, title, xlabels, ylabels, vmin=None, vmax=None, cmap='cool
     cont = ax.contourf(np.array(data).T, cmap=cmap, levels=16, vmin=vmin, vmax=vmax)
     ax.set_title(title)
     ax.set_ylabel("Pressure level (hPa)")
+    ax.set_xlabel("Time (dates every 15 days)")
     ax.set_xticks(range(len(data)))
     max_label_index = len(xlabels) * 15
     ax.set_xticks(range(min(len(data), max_label_index)))
@@ -209,19 +210,19 @@ for ax, title, data, vmin_, vmax_ in zip(axs, tituly, data_sady, vmin_sady, vmax
     fig.colorbar(cbar, ax=ax)
 
 plt.tight_layout()
-fig.savefig(f"vse_{rok}.png")
+fig.savefig(f"All_{rok}.png")
 plt.close(fig)
 
 fig_all_diff, axs_all = plt.subplots(2, 3, figsize=(36, 12))
 axs_all = axs_all.flatten()
 
 tituly_diff_all = [
-    "ERA5 - MERRA2 Zonal Wind",
-    "ERA5 - JRA Zonal Wind",
-    "MERRA2 - JRA Zonal Wind",
-    "ERA5 - MERRA2 Temperature",
-    "ERA5 - JRA Temperature",
-    "MERRA2 - JRA Temperature"
+    "Difference between ERA5 - MERRA2 Zonal Wind",
+    "Difference between ERA5 - JRA Zonal Wind",
+    "Difference between MERRA2 - JRA Zonal Wind",
+    "Difference between ERA5 - MERRA2 Temperature",
+    "Difference between ERA5 - JRA Temperature",
+    "Difference between MERRA2 - JRA Temperature"
 ]
 
 data_diff_all = [eu_mu_diff, eu_ju_diff, mu_ju_diff, et_mt_diff, et_jt_diff, mt_jt_diff]
@@ -232,7 +233,7 @@ for ax, title, data, vlim in zip(axs_all, tituly_diff_all, data_diff_all, vlims_
     fig_all_diff.colorbar(cbar, ax=ax)
 
 plt.tight_layout()
-fig_all_diff.savefig(f"vsechny_rozdily_{rok}.png")
+fig_all_diff.savefig(f"All_differences_{rok}.png")
 plt.close(fig_all_diff)
 
 detailni_indexy = [i for i, hladina in enumerate(p) if 1 <= hladina <= 10]
@@ -271,12 +272,12 @@ fig_detail, axs_detail = plt.subplots(2, 3, figsize=(36, 12))
 axs_detail = axs_detail.flatten()
 
 tituly_detail = [
-    "Zonalní vítr na SH z ERA5 (detaily 1-10 hPa)",
-    "Zonalní vítr na SH z MERRA2 (detaily 1-10 hPa)",
-    "Zonalní vítr na SH z JRA (detaily 1-10 hPa)",
-    "Teplota na SH z ERA5 (detaily 1-10 hPa)",
-    "Teplota na SH z MERRA2 (detaily 1-10 hPa)",
-    "Teplota na SH z JRA (detaily 1-10 hPa)"
+    "Zonal wind at SH from ERA5 (detailed 1 - 10 hPa)",
+    "Zonal wind at SH from MERRA2 (detailed 1 - 10 hPa)",
+    "Zonal wind at SH from JRA (detailed 1 - 10 hPa)",
+    "Temperature at SH from ERA5 (detailed 1 - 10 hPa)",
+    "Temperature at SH from MERRA2 (detailed 1 - 10 hPa)",
+    "Temperature at SH from JRA (detailed 1 - 10 hPa)"
 ]
 
 data_sady_detail = [detail_eu, detail_mu, detail_ju, detail_et, detail_mt, detail_jt]
@@ -288,19 +289,19 @@ for ax, title, data, vmin_, vmax_ in zip(axs_detail, tituly_detail, data_sady_de
     fig_detail.colorbar(cbar, ax=ax)
 
 plt.tight_layout()
-fig_detail.savefig(f"vse_detail_1_10_{rok}.png")
+fig_detail.savefig(f"All_detailed_1_10_{rok}.png")
 plt.close(fig_detail)
 
 fig_detail_diff, axs_detail_diff = plt.subplots(2, 3, figsize=(36, 12))
 axs_detail_diff = axs_detail_diff.flatten()
 
 tituly_diff_detail = [
-    "ERA5 - MERRA2 Zonalní vítr (detaily 1-10 hPa)",
-    "ERA5 - JRA Zonalní vítr (detaily 1-10 hPa)",
-    "MERRA2 - JRA Zonalní vítr (detaily 1-10 hPa)",
-    "ERA5 - MERRA2 Teplota (detaily 1-10 hPa)",
-    "ERA5 - JRA Teplota (detaily 1-10 hPa)",
-    "MERRA2 - JRA Teplota (detaily 1-10 hPa)"
+    "Difference between ERA5 - MERRA2 Zonal Wind (detailed 1 - 10 hPa)",
+    "Difference between ERA5 - JRA Zonal Wind (detailed 1 - 10 hPa)",
+    "Difference between MERRA2 - JRA Zonal Wind (detailed 1 - 10 hPa)",
+    "Difference between ERA5 - MERRA2 Temperature (detailed 1 - 10 hPa)",
+    "Difference between ERA5 - JRA Temperature (detailed 1 - 10 hPa)",
+    "Difference between MERRA2 - JRA Temperature (detailed 1 - 10 hPa)"
 ]
 
 data_diff_detail = [detail_eu_mu_diff, detail_eu_ju_diff, detail_mu_ju_diff,
@@ -312,5 +313,5 @@ for ax, title, data, vlim in zip(axs_detail_diff, tituly_diff_detail, data_diff_
     fig_detail_diff.colorbar(cbar, ax=ax)
 
 plt.tight_layout()
-fig_detail_diff.savefig(f"vsechny_rozdily_detail_1_10_{rok}.png")
+fig_detail_diff.savefig(f"All_differences_detailed_1_10_{rok}.png")
 plt.close(fig_detail_diff)

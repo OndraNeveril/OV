@@ -2,4 +2,6 @@
 .idea/
 *.zip
 *.docx
-
+test.py
+get_era.py
+*/rda-download.py
