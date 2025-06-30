@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 import os
 from datetime import datetime, timedelta
 
+plt.rcParams.update({'font.size': 16})
+
 while True:
     rok = int(input("2002 nebo 2019? "))
     if rok in [2002, 2019]:
@@ -78,7 +80,10 @@ def euf():
         dataset = Dataset(os.path.join(folder, f))
         var_data = dataset.variables['u'][:]
         pressure_levels = dataset.variables['pressure_level'][:]
-        time_labels, z = dates(f"01/06/{rok}", dataset, time_labels, z)
+        if rok == 2002:
+            time_labels, z = dates(f"01/08/2002", dataset, time_labels, z)
+        if rok == 2019:
+            time_labels, z = dates(f"01/06/2019", dataset, time_labels, z)
         x, data = av(var_data, data, x)
     return data, time_labels, pressure_levels
 
@@ -155,8 +160,9 @@ def vykresli(ax, data, title, xlabels, ylabels, vmin=None, vmax=None, cmap='cool
     cont = ax.contourf(np.array(data).T, cmap=cmap, levels=16, vmin=vmin, vmax=vmax)
     ax.set_title(title)
     ax.set_ylabel("Pressure level (hPa)")
-    ax.set_xlabel("Time (dates every 15 days)")
+    ax.set_xlabel("Time (dates)")
     ax.set_xticks(range(len(data)))
+    ax.tick_params(axis='x', labelsize=12)
     max_label_index = len(xlabels) * 15
     ax.set_xticks(range(min(len(data), max_label_index)))
     ax.set_xticklabels([xlabels[i // 15] if i % 15 == 0 and i // 15 < len(xlabels) else '' for i in range(min(len(data), max_label_index))])
@@ -193,12 +199,12 @@ fig, axs = plt.subplots(2, 3, figsize=(36, 12))
 axs = axs.flatten()
 
 tituly = [
-    "Zonal wind at SH from ERA5",
-    "Zonal wind at SH from MERRA2",
-    "Zonal wind at SH from JRA",
-    "Temperature at SH from ERA5",
-    "Temperature at SH from MERRA2",
-    "Temperature at SH from JRA"
+    "Zonal wind (m/s) at SH from ERA5",
+    "Zonal wind (m/s) at SH from MERRA2",
+    "Zonal wind (m/s) at SH from JRA",
+    "Temperature (K) at SH from ERA5",
+    "Temperature (K) at SH from MERRA2",
+    "Temperature (K) at SH from JRA"
 ]
 
 data_sady = [eu_arr, mu_arr, ju, et_arr, mt_arr, jt]
@@ -207,6 +213,7 @@ vmax_sady = [vmax_wind]*3 + [vmax_temp]*3
 
 for ax, title, data, vmin_, vmax_ in zip(axs, tituly, data_sady, vmin_sady, vmax_sady):
     cbar = vykresli(ax, data, title, ti, p, vmin=vmin_, vmax=vmax_)
+    cbar.set_label("Temperature (K)")
     fig.colorbar(cbar, ax=ax)
 
 plt.tight_layout()
@@ -217,12 +224,12 @@ fig_all_diff, axs_all = plt.subplots(2, 3, figsize=(36, 12))
 axs_all = axs_all.flatten()
 
 tituly_diff_all = [
-    "Difference between ERA5 - MERRA2 Zonal Wind",
-    "Difference between ERA5 - JRA Zonal Wind",
-    "Difference between MERRA2 - JRA Zonal Wind",
-    "Difference between ERA5 - MERRA2 Temperature",
-    "Difference between ERA5 - JRA Temperature",
-    "Difference between MERRA2 - JRA Temperature"
+    "Difference between ERA5 - MERRA2 Zonal Wind (m/s)",
+    "Difference between ERA5 - JRA Zonal Wind (m/s)",
+    "Difference between MERRA2 - JRA Zonal Wind (m/s)",
+    "Difference between ERA5 - MERRA2 Temperature (K)",
+    "Difference between ERA5 - JRA Temperature (K)",
+    "Difference between MERRA2 - JRA Temperature (K)"
 ]
 
 data_diff_all = [eu_mu_diff, eu_ju_diff, mu_ju_diff, et_mt_diff, et_jt_diff, mt_jt_diff]
@@ -272,12 +279,12 @@ fig_detail, axs_detail = plt.subplots(2, 3, figsize=(36, 12))
 axs_detail = axs_detail.flatten()
 
 tituly_detail = [
-    "Zonal wind at SH from ERA5 (detailed 1 - 10 hPa)",
-    "Zonal wind at SH from MERRA2 (detailed 1 - 10 hPa)",
-    "Zonal wind at SH from JRA (detailed 1 - 10 hPa)",
-    "Temperature at SH from ERA5 (detailed 1 - 10 hPa)",
-    "Temperature at SH from MERRA2 (detailed 1 - 10 hPa)",
-    "Temperature at SH from JRA (detailed 1 - 10 hPa)"
+    "Zonal wind (m/s) at SH from ERA5 (detailed 1 - 10 hPa)",
+    "Zonal wind (m/s) at SH from MERRA2 (detailed 1 - 10 hPa)",
+    "Zonal wind (m/s) at SH from JRA (detailed 1 - 10 hPa)",
+    "Temperature (K) at SH from ERA5 (detailed 1 - 10 hPa)",
+    "Temperature (K) at SH from MERRA2 (detailed 1 - 10 hPa)",
+    "Temperature (K) at SH from JRA (detailed 1 - 10 hPa)"
 ]
 
 data_sady_detail = [detail_eu, detail_mu, detail_ju, detail_et, detail_mt, detail_jt]
@@ -296,12 +303,12 @@ fig_detail_diff, axs_detail_diff = plt.subplots(2, 3, figsize=(36, 12))
 axs_detail_diff = axs_detail_diff.flatten()
 
 tituly_diff_detail = [
-    "Difference between ERA5 - MERRA2 Zonal Wind (detailed 1 - 10 hPa)",
-    "Difference between ERA5 - JRA Zonal Wind (detailed 1 - 10 hPa)",
-    "Difference between MERRA2 - JRA Zonal Wind (detailed 1 - 10 hPa)",
-    "Difference between ERA5 - MERRA2 Temperature (detailed 1 - 10 hPa)",
-    "Difference between ERA5 - JRA Temperature (detailed 1 - 10 hPa)",
-    "Difference between MERRA2 - JRA Temperature (detailed 1 - 10 hPa)"
+    "Difference between ERA5 - MERRA2 Zonal Wind (m/s) (detailed 1 - 10 hPa)",
+    "Difference between ERA5 - JRA Zonal Wind (m/s) (detailed 1 - 10 hPa)",
+    "Difference between MERRA2 - JRA Zonal Wind (m/s) (detailed 1 - 10 hPa)",
+    "Difference between ERA5 - MERRA2 Temperature (K) (detailed 1 - 10 hPa)",
+    "Difference between ERA5 - JRA Temperature (K) (detailed 1 - 10 hPa)",
+    "Difference between MERRA2 - JRA Temperature (K) (detailed 1 - 10 hPa)"
 ]
 
 data_diff_detail = [detail_eu_mu_diff, detail_eu_ju_diff, detail_mu_ju_diff,
