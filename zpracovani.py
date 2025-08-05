@@ -31,13 +31,11 @@ def format_date_label(date_str):
 def dates(s, inp, out, x):
     try:
         for i in range(len(inp.variables['valid_time'][:])):
-            if (i + x) % 15 == 0:
-                out.append(den_datum(datum_den(s) + i + x, rok))
+            out.append(den_datum(datum_den(s) + i + x, rok))
         x += len(inp.variables['valid_time'][:])
     except KeyError:
         for i in range(len(inp.variables['time'][:])):
-            if (i + x) % 15 == 0:
-                out.append(den_datum(datum_den(s) + i + x, rok))
+            out.append(den_datum(datum_den(s) + i + x, rok))
         x += len(inp.variables['time'][:])
     return out, x
 
