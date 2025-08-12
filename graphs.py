@@ -1,13 +1,19 @@
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+from matplotlib.colors import TwoSlopeNorm
 from zpracovani import *
 
 def vykresli(ax, data, title, xlabels, ylabels, vmin=None, vmax=None, cmap='RdBu_r', p=0, d=False):
-    cont = ax.contourf(np.array(data).T, cmap=cmap, vmin=vmin, vmax=vmax, levels=200)
+    if d:
+        cont = ax.contourf(np.array(data).T, cmap=cmap, vmin=(-max(abs(vmin), vmax, 4)), vmax=max(abs(vmin), vmax, 4), levels=100)
+    elif p >= 4:
+        cont = ax.contourf(np.array(data).T, cmap=cmap, vmin=(-max(abs(vmin), vmax, 70)), vmax=max(abs(vmin), vmax, 70), levels=100)
+    else:
+        cont = ax.contourf(np.array(data).T, cmap=cmap, vmin=round(int(vmin)/10)*10, vmax=vmax, levels=100)
     if p == 1 or p == 4:
         ax.set_ylabel("Pressure level (hPa)", fontsize=16)
-        ax.tick_params(axis='y', labelsize=12)
+        ax.tick_params(axis='y', labelsize=14)
         ax.set_yticks(range(len(ylabels)))
         ax.set_yticklabels(ylabels)
     else:
@@ -26,31 +32,35 @@ def vykresli(ax, data, title, xlabels, ylabels, vmin=None, vmax=None, cmap='RdBu
                 xticks.append(i)
                 xticklabels.append(format_date_label(label))
         ax.set_xticks(xticks)
-        ax.set_xticklabels(xticklabels, fontsize=12)
-    if p == 3 and not d:
-        sm = mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(-10,70), cmap=cmap)
-        sm.set_array([])
-        cbar = fig.colorbar(sm, ax=ax, extend='both', orientation='vertical', fraction=0.046, pad=0.04)
-        cbar.set_label("Zonal wind (m/s)", labelpad=10, fontsize=16)
-        cbar.set_ticks([i for i in range(-10, 80, 10)])
-    if p == 3 and d:
-        sm = mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(-4,1.8), cmap=cmap)
-        sm.set_array([])
-        cbar = fig.colorbar(sm, ax=ax, extend='both', orientation='vertical', fraction=0.046, pad=0.04)
-        cbar.set_label("Zonal wind (m/s)", labelpad=0.5, fontsize=16)
-        cbar.set_ticks([-4, -3.5, -3, -2.5, -2, -1.5, -1, -0.5, 0, 0.5, 1, 1.5])
+        ax.set_xticklabels(xticklabels, fontsize=14)
     if p == 6 and not d:
-        sm = mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(200, 270), cmap=cmap)
+        sm = mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(-max(abs(vmin), vmax, 70), max(abs(vmin), vmax, 70)), cmap=cmap)
         sm.set_array([])
         cbar = fig.colorbar(sm, ax=ax, extend='both', orientation='vertical', fraction=0.046, pad=0.04)
-        cbar.set_label("Temperature (K)", labelpad=10, fontsize=16)
-        cbar.set_ticks([i for i in range(200, 280, 10)])
+        cbar.set_label("Zonal mean zonal wind (m/s)", labelpad=10, fontsize=16)
+        cbar.set_ticks([i for i in range(-70, 80, 20)])
+        cbar.ax.tick_params(labelsize=12)
     if p == 6 and d:
-        sm = mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(-4, 4.8), cmap=cmap)
+        sm = mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(-max(abs(vmin), vmax, 4), max(abs(vmin), vmax, 4)), cmap=cmap)
         sm.set_array([])
         cbar = fig.colorbar(sm, ax=ax, extend='both', orientation='vertical', fraction=0.046, pad=0.04)
-        cbar.set_label("Temperature (K)", labelpad=1, fontsize=16)
+        cbar.set_label("Zonal mean temperature (K)", labelpad=10, fontsize=16)
         cbar.set_ticks([i for i in range(-4, 5)])
+        cbar.ax.tick_params(labelsize=12)
+    if p == 3 and not d:
+        sm = mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(round(int(vmin)/10)*10, vmax), cmap=cmap)
+        sm.set_array([])
+        cbar = fig.colorbar(sm, ax=ax, extend='both', orientation='vertical', fraction=0.046, pad=0.04)
+        cbar.set_label("Zonal mean temperature (K)", labelpad=10, fontsize=16)
+        cbar.set_ticks([i for i in range(round(int(vmin)/10)*10, int(vmax)+1, 10)])
+        cbar.ax.tick_params(labelsize=12)
+    if p == 3 and d:
+        sm = mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(-max(abs(vmin), vmax, 4), max(abs(vmin), vmax, 4)), cmap=cmap)
+        sm.set_array([])
+        cbar = fig.colorbar(sm, ax=ax, extend='both', orientation='vertical', fraction=0.046, pad=0.04)
+        cbar.set_label("Zonal mean zonal wind (m/s)", labelpad=10, fontsize=16)
+        cbar.set_ticks([i for i in range(-4, 5)])
+        cbar.ax.tick_params(labelsize=12)
     return cont
 
 eu, ti, p = euf()
@@ -83,9 +93,9 @@ axs = axs.flatten()
 
 tituly = ["ERA5", "MERRA2", "JRA-3Q", "", "", ""]
 
-data_sady = [eu_arr, mu_arr, ju, et_arr, mt_arr, jt]
-vmin_sady = [vmin_wind]*3 + [vmin_temp]*3
-vmax_sady = [vmax_wind]*3 + [vmax_temp]*3
+data_sady = [et_arr, mt_arr, jt, eu_arr, mu_arr, ju]
+vmin_sady = [vmin_temp]*3 + [vmin_wind]*3
+vmax_sady = [vmax_temp]*3 + [vmax_wind]*3
 
 pp = 0
 for ax, title, data, vmin_, vmax_ in zip(axs, tituly, data_sady, vmin_sady, vmax_sady):
@@ -102,7 +112,7 @@ axs_all = axs_all.flatten()
 
 tituly_diff_all = ["ERA5 - MERRA2", "ERA5 - JRA-3Q", "MERRA2 - JRA-3Q", "", "", ""]
 pp = 0
-data_diff_all = [eu_mu_diff, eu_ju_diff, mu_ju_diff, et_mt_diff, et_jt_diff, mt_jt_diff]
+data_diff_all = [et_mt_diff, et_jt_diff, mt_jt_diff, eu_mu_diff, eu_ju_diff, mu_ju_diff]
 vlims_diff = [np.max(np.abs(d)) for d in data_diff_all]
 
 for ax, title, data, vlim in zip(axs_all, tituly_diff_all, data_diff_all, vlims_diff):
@@ -151,9 +161,9 @@ axs_detail = axs_detail.flatten()
 
 tituly_detail = ["ERA5", "MERRA2", "JRA-3Q", "", "", ""]
 
-data_sady_detail = [detail_eu, detail_mu, detail_ju, detail_et, detail_mt, detail_jt]
-vmin_sady_detail = [detail_vmin_wind]*3 + [detail_vmin_temp]*3
-vmax_sady_detail = [detail_vmax_wind]*3 + [detail_vmax_temp]*3
+data_sady_detail = [detail_et, detail_mt, detail_jt, detail_eu, detail_mu, detail_ju]
+vmin_sady_detail = [detail_vmin_temp]*3 + [detail_vmin_wind]*3
+vmax_sady_detail = [detail_vmax_temp]*3 + [detail_vmax_wind]*3
 
 pp = 0
 for ax, title, data, vmin_, vmax_ in zip(axs_detail, tituly_detail, data_sady_detail, vmin_sady_detail, vmax_sady_detail):
@@ -170,8 +180,7 @@ axs_detail_diff = axs_detail_diff.flatten()
 
 tituly_diff_detail = ["ERA5 - MERRA2", "ERA5 - JRA-3Q", "MERRA2 - JRA-3Q", "", "", ""]
 
-data_diff_detail = [detail_eu_mu_diff, detail_eu_ju_diff, detail_mu_ju_diff,
-                    detail_et_mt_diff, detail_et_jt_diff, detail_mt_jt_diff]
+data_diff_detail = [detail_et_mt_diff, detail_et_jt_diff, detail_mt_jt_diff, detail_eu_mu_diff, detail_eu_ju_diff, detail_mu_ju_diff]
 vlims_diff_detail = [np.max(np.abs(d)) for d in data_diff_detail]
 
 pp = 0
