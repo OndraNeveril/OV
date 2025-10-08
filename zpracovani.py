@@ -27,7 +27,6 @@ def format_date_label(date_str):
     dt = datetime.strptime(date_str, "%d/%m/%Y")
     return dt.strftime("%b\n%d")
 
-
 def dates(s, inp, out, x):
     try:
         for i in range(len(inp.variables['valid_time'][:])):
@@ -69,23 +68,34 @@ def prumeruj_po_4(data):
             nove_data.append(avg)
     return np.array(nove_data)
 
+def vyber_sirky(dataset):
+    for key in ['latitude', 'lat']:
+        if key in dataset.variables:
+            sirky = dataset.variables[key][:]
+            break
+    else:
+        raise KeyError("Latitude variable not found")
+    indexy = np.where((sirky >= -90) & (sirky <= -60))[0]
+    return indexy
+
+
 def euf():
     folder = "./Era_2019" if rok == 2019 else "./Era_2002"
     files = ["eu6.nc", "eu7.nc", "eu8.nc", "eu9.nc"] if rok == 2019 else ["eu208.nc", "eu209.nc", "eu210.nc", "eu211.nc"]
-    data = []
-    time_labels = []
-    x = 0
-    z = 0
+    data, time_labels = [], []
+    x = z = 0
     for f in files:
         dataset = Dataset(os.path.join(folder, f))
-        var_data = dataset.variables['u'][:]
-        pressure_levels = dataset.variables['pressure_level'][:]
+        lat_idx = vyber_sirky(dataset)
+        var_data = dataset.variables['u'][:, :, lat_idx, :]
+        pressure_levels = dataset.variables['pressure_level'][:].astype(int)
         if rok == 2002:
-            time_labels, z = dates(f"01/08/2002", dataset, time_labels, z)
-        if rok == 2019:
-            time_labels, z = dates(f"01/06/2019", dataset, time_labels, z)
+            time_labels, z = dates("01/08/2002", dataset, time_labels, z)
+        else:
+            time_labels, z = dates("01/06/2019", dataset, time_labels, z)
         x, data = av(var_data, data, x)
     return data, time_labels, pressure_levels
+
 
 def etf():
     folder = "./Era_2019" if rok == 2019 else "./Era_2002"
@@ -94,9 +104,11 @@ def etf():
     x = 0
     for f in files:
         dataset = Dataset(os.path.join(folder, f))
-        var_data = dataset.variables['t'][:]
+        lat_idx = vyber_sirky(dataset)
+        var_data = dataset.variables['t'][:, :, lat_idx, :]
         x, data = av(var_data, data, x)
     return data
+
 
 def muf():
     folder = "./Merra_2019" if rok == 2019 else "./Merra_2002"
@@ -105,9 +117,11 @@ def muf():
     x = 0
     for f in files:
         dataset = Dataset(os.path.join(folder, f))
-        var_data = prumeruj_po_8(dataset.variables['U'][:])
+        lat_idx = vyber_sirky(dataset)
+        var_data = prumeruj_po_8(dataset.variables['U'][:, :, lat_idx, :])
         x, data = av(var_data, data, x)
     return data
+
 
 def mtf():
     folder = "./Merra_2019" if rok == 2019 else "./Merra_2002"
@@ -116,29 +130,31 @@ def mtf():
     x = 0
     for f in files:
         dataset = Dataset(os.path.join(folder, f))
-        var_data = prumeruj_po_8(dataset.variables['T'][:])
+        lat_idx = vyber_sirky(dataset)
+        var_data = prumeruj_po_8(dataset.variables['T'][:, :, lat_idx, :])
         x, data = av(var_data, data, x)
     return data
+
 
 def juf():
     folder = "./Jra_2019" if rok == 2019 else "./Jra_2002"
     files = ["ju6.nc", "ju7.nc", "ju8.nc", "ju9.nc"] if rok == 2019 else ["ju208.nc", "ju209.nc", "ju210.nc", "ju211.nc"]
-    data = []
-    time_labels = []
-    x = 0
-    z = 0
+    data, time_labels = [], []
+    x = z = 0
     vybrane_tlaky = [100, 70, 50, 30, 20, 10, 7, 5, 3, 2, 1]
     for f in files:
         with Dataset(os.path.join(folder, f)) as dataset:
+            lat_idx = vyber_sirky(dataset)
             all_pressures = dataset.variables['pressure_level'][:]
             indexy = [i for i, p in enumerate(all_pressures) if p in vybrane_tlaky]
             indexy = sorted(indexy, key=lambda i: vybrane_tlaky.index(all_pressures[i]))
-            var_data = prumeruj_po_4(dataset.variables['ugrd-pres-an-ll125'][:])
+            var_data = prumeruj_po_4(dataset.variables['ugrd-pres-an-ll125'][:, :, lat_idx, :])
             vybrana_data = var_data[:, indexy, :, :]
             time_labels, z = dates(f"01/06/{rok}", dataset, time_labels, z)
             x, data = av(vybrana_data, data, x)
             pressure_levels = all_pressures[indexy]
     return np.array(data), time_labels, pressure_levels
+
 
 def jtf():
     folder = "./Jra_2019" if rok == 2019 else "./Jra_2002"
@@ -148,10 +164,11 @@ def jtf():
     vybrane_tlaky = [100, 70, 50, 30, 20, 10, 7, 5, 3, 2, 1]
     for f in files:
         with Dataset(os.path.join(folder, f)) as dataset:
+            lat_idx = vyber_sirky(dataset)
             all_pressures = dataset.variables['pressure_level'][:]
             indexy = [i for i, p in enumerate(all_pressures) if p in vybrane_tlaky]
             indexy = sorted(indexy, key=lambda i: vybrane_tlaky.index(all_pressures[i]))
-            var_data = prumeruj_po_4(dataset.variables['tmp-pres-an-ll125'][:])
+            var_data = prumeruj_po_4(dataset.variables['tmp-pres-an-ll125'][:, :, lat_idx, :])
             vybrana_data = var_data[:, indexy, :, :]
             x, data = av(vybrana_data, data, x)
     return np.array(data)
