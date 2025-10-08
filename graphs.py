@@ -95,8 +95,6 @@ lists_to_diff_list(mt, jt, ti, p, f"m_vs_j_t_{rok}.csv")
 lists_to_diff_list(eu, ju, ti, p, f"e_vs_j_u_{rok}.csv")
 lists_to_diff_list(et, jt, ti, p, f"e_vs_j_t_{rok}.csv")
 
-"""
-
 eu_arr = np.array(eu)
 mu_arr = np.array(mu)
 et_arr = np.array(et)
@@ -219,4 +217,4 @@ fig_detail_diff.suptitle(f"SSW Southern hemisphere {rok} winter\n", fontsize=20,
 
 plt.tight_layout()
 fig_detail_diff.savefig(f"All_differences_detailed_1_10_{rok}.png")
-plt.close(fig_detail_diff)"""
+plt.close(fig_detail_diff)
