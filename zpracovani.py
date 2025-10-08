@@ -172,3 +172,10 @@ def jtf():
             vybrana_data = var_data[:, indexy, :, :]
             x, data = av(vybrana_data, data, x)
     return np.array(data)
+
+def lists_to_diff_list(l1, l2, x, y, f):
+    o = open(f, "w")
+    o.write("Date, level, difference value\r\n")
+    for i in range(len(x)):
+        for j in range(len(y)):
+            o.write(str(x[i]) + ", " + str(y[j]) +", " + str(l1[i][j] - l2[i][j]) + "\r\n")
