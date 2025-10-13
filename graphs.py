@@ -18,7 +18,7 @@ def vykresli(ax, data, title, xlabels, ylabels, vmin=None, vmax=None, cmap='RdBu
 
     ax.set_yscale('log')
     ax.invert_yaxis()
-    ax.yaxis.set_minor_locator(mpl.ticker.NullLocator())  # ← vypne minor ticks
+    ax.yaxis.set_minor_locator(mpl.ticker.NullLocator())
 
     if p == 1 or p == 4:
         ax.set_ylabel("Pressure level (hPa)", fontsize=16)
@@ -29,14 +29,6 @@ def vykresli(ax, data, title, xlabels, ylabels, vmin=None, vmax=None, cmap='RdBu
         ax.set_yticks(y)
         ax.set_yticklabels([])
 
-    if p == 1 or p == 2 or p == 3:
-        ax.set_title(title, fontsize=16, weight='bold')
-        ax.set_xticks([])
-        ax.set_xticklabels([])
-    if p == 4 or p == 5 or p == 6:
-        if p == 5:
-            ax.set_xlabel("Date", fontsize=16)
-
     xticks = []
     xticklabels = []
     for i, label in enumerate(xlabels):
@@ -44,21 +36,25 @@ def vykresli(ax, data, title, xlabels, ylabels, vmin=None, vmax=None, cmap='RdBu
         if day in (1, 15) or i == len(xlabels) - 1:
             xticks.append(i)
             xticklabels.append(format_date_label(label))
-
     ax.set_xticks(xticks)
-    ax.set_xticklabels(xticklabels, fontsize=14 if p in (4, 5, 6) else 0)
+    minor_xticks = list(range(len(xlabels) + 1))
+    ax.set_xticks(minor_xticks, minor=True)
 
     if p in (1, 2, 3):
+        ax.set_xticklabels([])
+        ax.tick_params(axis='x', which='minor', length=3, width=0.7)
+        ax.tick_params(axis='x', which='major', length=7, width=1.2)
         if d:
             ax.set_title(title, fontsize=16, weight='bold', x=0.2)
         else:
             ax.set_title(title, fontsize=16, weight='bold', x=0.1)
-        ax.tick_params(axis='x', which='both', length=7, width=1.2)
     if p in (4, 5, 6):
         ax.set_title(title, fontsize=16, weight='bold', x=0.05)
         if p == 5:
             ax.set_xlabel("Date", fontsize=16)
-        ax.tick_params(axis='x', which='both', length=7, width=1.2)
+        ax.set_xticklabels(xticklabels, fontsize=14)
+        ax.tick_params(axis='x', which='minor', length=3, width=0.7)
+        ax.tick_params(axis='x', which='major', length=7, width=1.2)
 
     if p == 6 and not d:
         sm = mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(-70,70), cmap=cmap)
