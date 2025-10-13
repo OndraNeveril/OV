@@ -61,7 +61,7 @@ def vykresli(ax, data, title, xlabels, ylabels, vmin=None, vmax=None, cmap='RdBu
         sm.set_array([])
         cbar = fig.colorbar(sm, ax=ax, extend='both', orientation='vertical', fraction=0.046, pad=0.04)
         cbar.set_label("Zonal mean zonal wind (m/s)", labelpad=10, fontsize=16)
-        cbar.set_ticks([i for i in range(-70, 80, 20)])
+        cbar.set_ticks([i for i in range(-70, 0, 20)] + [0] + [i for i in range(10, 80, 20)])
         cbar.ax.tick_params(labelsize=12)
     if p == 3 and d:
         sm = mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(-4, 4), cmap=cmap)
