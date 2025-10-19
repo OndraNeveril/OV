@@ -2,9 +2,11 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.colors import TwoSlopeNorm
+import pandas as pd
+import matplotlib.dates as mdates
 from zpracovani import *
 
-def vykresli(ax, data, title, xlabels, ylabels, vmin=None, vmax=None, cmap='RdBu_r', p=0, d=False):
+def     vykresli(ax, data, title, xlabels, ylabels, vmin=None, vmax=None, cmap='RdBu_r', p=0, d=False):
     data = np.array(data)
     y = np.array(ylabels, dtype=float)
     x = np.arange(len(xlabels))
@@ -61,7 +63,7 @@ def vykresli(ax, data, title, xlabels, ylabels, vmin=None, vmax=None, cmap='RdBu
         sm.set_array([])
         cbar = fig.colorbar(sm, ax=ax, extend='both', orientation='vertical', fraction=0.046, pad=0.04)
         cbar.set_label("Zonal mean zonal wind (m/s)", labelpad=10, fontsize=16)
-        cbar.set_ticks([i for i in range(-70, 0, 20)] + [0] + [i for i in range(10, 80, 20)])
+        cbar.set_ticks([i for i in range(-70, 80, 10)])
         cbar.ax.tick_params(labelsize=12)
     if p == 3 and d:
         sm = mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(-4, 4), cmap=cmap)
@@ -222,3 +224,20 @@ fig_detail_diff.suptitle(f"SSW Southern hemisphere {rok} winter\n", fontsize=20,
 plt.tight_layout()
 fig_detail_diff.savefig(f"graphs/All_differences_detailed_1_10_{rok}.png")
 plt.close(fig_detail_diff)
+
+fig, ax = plt.subplots(3, 1, figsize=(10.5, 10.5), sharex=True)
+dates = ['2005-11-01', '2005-11-15', '2005-11-30', '2005-12-15', '2005-12-30', '2006-01-15', '2006-01-30', '2006-02-15', '2006-02-28', '2006-03-15', '2006-03-31']
+date_ticks = pd.to_datetime(dates)
+date_ticks_mpl = mdates.date2num(date_ticks)
+start_date = date_ticks[0] - pd.Timedelta(days=1)
+end_date = date_ticks[-1] + pd.Timedelta(days=1)
+ax[0].set_xlim([start_date, end_date])
+ax[1].set_xlim([start_date, end_date])
+ax[2].set_xlim([start_date, end_date])
+ax[0].set_xticks(date_ticks_mpl)
+ax[1].set_xticks(date_ticks_mpl)
+ax[2].set_xticks(date_ticks_mpl)
+fig.suptitle(f"Time evolution at 10 hPa — SSW Southern hemisphere {rok} winter", fontsize=18, weight='bold')
+plt.tight_layout()
+fig.savefig(f"graphs/Time_series_{rok}.png")
+plt.close(fig)
