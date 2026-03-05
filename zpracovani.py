@@ -4,8 +4,8 @@ import os
 from datetime import datetime, timedelta
 
 while True:
-    rok = int(input("2002 nebo 2019? "))
-    if rok in [2002, 2019]:
+    rok = int(input("Který rok? "))
+    if rok in [2008, 2012, 2014, 2019]:
         break
 
 def den_datum(den, rok, *p):
@@ -172,6 +172,52 @@ def jtf():
             vybrana_data = var_data[:, indexy, :, :]
             x, data = av(vybrana_data, data, x)
     return np.array(data)
+
+def wuf():
+    folder = "./Jawara"
+    files = sorted([f for f in os.listdir(folder) if f.startswith("U") and f.endswith(".nc")])
+    data = []
+    x = 0
+    for f in files:
+        dataset = Dataset(os.path.join(folder, f))
+
+        for key in ['latitude', 'lat']:
+            if key in dataset.variables:
+                sirky = dataset.variables[key][:]
+                break
+
+        indexy = np.where((sirky >= 60) & (sirky <= 90))[0]
+
+        var_data = prumeruj_po_4(dataset.variables['U'][:, :, indexy, :])
+
+        x, data = av(var_data, data, x)
+
+    pressure_levels = dataset.variables['pressure_level'][:].astype(int)
+
+    return np.array(data), pressure_levels
+
+def wtf():
+    folder = "./Jawara"
+    files = sorted([f for f in os.listdir(folder) if f.startswith("T") and f.endswith(".nc")])
+    data = []
+    x = 0
+    for f in files:
+        dataset = Dataset(os.path.join(folder, f))
+
+        for key in ['latitude', 'lat']:
+            if key in dataset.variables:
+                sirky = dataset.variables[key][:]
+                break
+
+        indexy = np.where((sirky >= 60) & (sirky <= 90))[0]
+
+        var_data = prumeruj_po_4(dataset.variables['T'][:, :, indexy, :])
+
+        x, data = av(var_data, data, x)
+
+    pressure_levels = dataset.variables['pressure_level'][:].astype(int)
+
+    return np.array(data), pressure_levels
 
 def lists_to_diff_list(l1, l2, x, y, f):
     o = open(f, "w")
