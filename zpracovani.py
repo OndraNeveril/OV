@@ -57,13 +57,9 @@ def av(inp, out, x):
 
 # --- Funkce pro průměrování po 8 a 4 ---
 def prumeruj_po_8(data):
-    n = len(data)
-    nove_data = []
-    for i in range(0, n, 8):
-        blok = data[i:i+8]
-        if len(blok) == 8:
-            nove_data.append(np.mean(blok, axis=0))
-    return np.array(nove_data)
+    n = data.shape[0] // 8
+    data = data[:n*8]
+    return data.reshape(n, 8, *data.shape[1:]).mean(axis=1)
 
 def prumeruj_po_4(data):
     n = data.shape[0]
@@ -120,33 +116,61 @@ def etf():
 
 # --- MERRA ---
 def muf():
-    folder = f"./m{rok}"
-    files = sorted([f for f in os.listdir(folder) if f.endswith(".nc")])
-    data, time_labels = [], []
-    x = z = 0
+    folder = f"./Merra2/m{rok}"
+    files = sorted(
+        [f for f in os.listdir(folder) if f.endswith(".nc")],
+        key=lambda x: int(x.split(".")[0][1:])
+    )
+
+    data = []
+    time_labels = []
+    z = 0
+    start = f"01/09/{rok}"
+
     for f in files:
         dataset = Dataset(os.path.join(folder, f))
-        lat_idx = vyber_sirky(dataset)
-        var_data = prumeruj_po_8(dataset.variables['U'][:, :, lat_idx, :])
+        var_data = dataset.variables['U'][:]
+        var_data = prumeruj_po_8(var_data)
         var_data = np.mean(var_data, axis=(2,3))
         data.extend(var_data)
-        time_labels, z = dates("01/06/2019" if rok==2019 else "01/08/2002", dataset, time_labels, z)
-        pressure_levels = dataset.variables['plev'][:] if 'plev' in dataset.variables else dataset.variables['level'][:]
+
+        for i in range(var_data.shape[0]):
+            time_labels.append(den_datum(datum_den(start) + z + i, rok))
+
+        z += var_data.shape[0]
+
+        pressure_levels = dataset.variables['lev'][:]
+
     return np.array(data), time_labels, pressure_levels
 
 def mtf():
-    folder = f"./m{rok}"
-    files = sorted([f for f in os.listdir(folder) if f.endswith(".nc")])
-    data, time_labels = [], []
-    x = z = 0
+    folder = f"./Merra2/m{rok}"
+    files = sorted(
+        [f for f in os.listdir(folder) if f.endswith(".nc")],
+        key=lambda x: int(x.split(".")[0][1:])
+    )
+
+    data = []
+    time_labels = []
+    z = 0
+    start = f"01/09/{rok}"
+
     for f in files:
         dataset = Dataset(os.path.join(folder, f))
-        lat_idx = vyber_sirky(dataset)
-        var_data = prumeruj_po_8(dataset.variables['T'][:, :, lat_idx, :])
+
+        var_data = dataset.variables['T'][:]
+        var_data = prumeruj_po_8(var_data)
         var_data = np.mean(var_data, axis=(2,3))
+
         data.extend(var_data)
-        time_labels, z = dates("01/06/2019" if rok==2019 else "01/08/2002", dataset, time_labels, z)
-        pressure_levels = dataset.variables['plev'][:] if 'plev' in dataset.variables else dataset.variables['level'][:]
+
+        for i in range(var_data.shape[0]):
+            time_labels.append(den_datum(datum_den(start) + z + i, rok))
+
+        z += var_data.shape[0]
+
+        pressure_levels = dataset.variables['lev'][:]
+
     return np.array(data), time_labels, pressure_levels
 
 # --- JRA ---
@@ -192,7 +216,7 @@ def jtf():
 
 # --- JAWARA ---
 def wuf():
-    folder = f"./j{rok}"
+    folder = f"./Jawara/j{rok}"
     files = sorted([f for f in os.listdir(folder) if f.startswith("U") and f.endswith(".nc")])
     data, time_labels = [], []
     z = 0
@@ -228,7 +252,7 @@ def wuf():
 
 
 def wtf():
-    folder = f"./j{rok}"
+    folder = f"./Jawara/j{rok}"
     files = sorted([f for f in os.listdir(folder) if f.startswith("T") and f.endswith(".nc")])
     data, time_labels = [], []
     z = 0

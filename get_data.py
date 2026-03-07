@@ -10,13 +10,13 @@ while True:
         break
 
 download_folder = "/home/ondrej/Downloads"
-destination_folder = f"/media/ondrej/f33d1d42-ade5-41fb-98df-bd6fefb6cf63/dokument/AV/2025 - stratosferické ohřevy/OV/m{rok}"
+destination_folder = f"/media/ondrej/f33d1d42-ade5-41fb-98df-bd6fefb6cf63/dokument/AV/2025 - stratosferické ohřevy/OV/Merra2/m{rok}"
 valid_extensions = [".nc", ".nc4"]
 
 opakovat = []
 
 default_timeout = 20
-extra_timeout = 40
+extra_timeout = 60
 check_interval = 20
 os.makedirs(destination_folder, exist_ok=True)
 
@@ -24,12 +24,12 @@ with open(f"{rok}.txt") as file:
     lines = file.readlines()
 
 for x, url in enumerate(lines):
-    #if x not in opakovat:
-    #   continue
+    if x not in opakovat:
+       continue
 
     url = url.strip()
-    if not url:
-        continue
+    #if not url:
+    #    continue
 
     print(f"\n🔗 {x+1}. Otevírám: {url}")
     webbrowser.open(url)

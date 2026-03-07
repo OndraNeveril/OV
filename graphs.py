@@ -76,7 +76,7 @@ datasets_list = [
     #("ERA5", euf, etf),
     ("MERRA2", muf, mtf),
     #("JRA-3Q", juf, jtf),
-    #("JAWARA", wuf, wtf)
+    ("JAWARA", wuf, wtf)
 ]
 
 results = []
