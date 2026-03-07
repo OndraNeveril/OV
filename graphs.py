@@ -1,36 +1,47 @@
 import numpy as np
-import matplotlib as mpl
 import matplotlib.pyplot as plt
-from matplotlib.colors import TwoSlopeNorm
-import pandas as pd
-import matplotlib.dates as mdates
+import matplotlib as mpl
+from datetime import datetime
 from zpracovani import *
 
-def vykresli(ax, data, title, xlabels, ylabels, vmin=None, vmax=None, cmap='RdBu_r', p=0, d=False):
+def vykresli(ax, data, title, xlabels, ylabels, yticks, vmin=None, vmax=None, cmap='RdBu_r', p=1, datasets=3, d=False):
     data = np.array(data)
     y = np.array(ylabels, dtype=float)
     x = np.arange(len(xlabels))
 
+    # Kontury
     if d:
-        cont = ax.contourf(x, y, data.T, cmap=cmap, vmin=(-max(abs(vmin), vmax, 4)), vmax=max(abs(vmin), vmax, 4), levels=100)
-    elif p >= 4:
-        cont = ax.contourf(x, y, data.T, cmap=cmap, vmin=(-max(abs(vmin), vmax, 70)), vmax=max(abs(vmin), vmax, 70), levels=100)
+        cont = ax.contourf(x, y, data.T, cmap=cmap,
+                           vmin=-max(abs(vmin), abs(vmax), 4),
+                           vmax=max(abs(vmin), abs(vmax), 4),
+                           levels=100)
     else:
-        cont = ax.contourf(x, y, data.T, cmap=cmap, vmin=round(int(vmin)/10)*10, vmax=vmax, levels=100)
+        cont = ax.contourf(x, y, data.T, cmap=cmap,
+                           vmin=np.floor(vmin/10)*10 if vmin is not None else None,
+                           vmax=vmax,
+                           levels=100)
 
     ax.set_yscale('log')
     ax.invert_yaxis()
     ax.yaxis.set_minor_locator(mpl.ticker.NullLocator())
 
-    if p == 1 or p == 4:
+    col = (p - 1) % datasets
+    row = (p - 1) // datasets
+
+    # Y osa
+    if col == 0:
         ax.set_ylabel("Pressure level (hPa)", fontsize=16)
         ax.tick_params(axis='y', labelsize=14)
-        ax.set_yticks(y)
-        ax.set_yticklabels(ylabels)
-    else:
-        ax.set_yticks(y)
-        ax.set_yticklabels([])
+        if yticks is not None:
+            # vybereme pouze indexy, které odpovídají yticks
+            indices = [i for i, val in enumerate(y) if val in yticks]
+            ax.set_yticks(y[indices])
+            ax.set_yticklabels([f"{val:.1f}" for val in y[indices]])
+        else:
+            ax.set_yticks(y)
+            ax.set_yticklabels([f"{val:.1f}" for val in y])
 
+    # X osa
     xticks = []
     xticklabels = []
     for i, label in enumerate(xlabels):
@@ -38,203 +49,109 @@ def vykresli(ax, data, title, xlabels, ylabels, vmin=None, vmax=None, cmap='RdBu
         if day in (1, 15) or i == len(xlabels) - 1:
             xticks.append(i)
             xticklabels.append(format_date_label(label))
+
     ax.set_xticks(xticks)
-    minor_xticks = list(range(len(xlabels) + 1))
+    ax.set_xticklabels(xticklabels, fontsize=12, rotation=45)
+    minor_xticks = list(range(len(xlabels)))
     ax.set_xticks(minor_xticks, minor=True)
+    ax.tick_params(axis='x', which='minor', length=3, width=0.7)
+    ax.tick_params(axis='x', which='major', length=7, width=1.2)
 
-    if p in (1, 2, 3):
-        ax.set_xticklabels([])
-        ax.tick_params(axis='x', which='minor', length=3, width=0.7)
-        ax.tick_params(axis='x', which='major', length=7, width=1.2)
-        if d:
-            ax.set_title(title, fontsize=16, weight='bold', x=0.2)
-        else:
-            ax.set_title(title, fontsize=16, weight='bold', x=0.1)
-    if p in (4, 5, 6):
-        ax.set_title(title, fontsize=16, weight='bold', x=0.05)
-        if p == 5:
-            ax.set_xlabel("Date", fontsize=16)
-        ax.set_xticklabels(xticklabels, fontsize=14)
-        ax.tick_params(axis='x', which='minor', length=3, width=0.7)
-        ax.tick_params(axis='x', which='major', length=7, width=1.2)
+    if row == 0:
+        ax.set_title(title, fontsize=16, weight='bold')
 
-    if p == 6 and not d:
-        sm = mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(-70,70), cmap=cmap)
-        sm.set_array([])
-        cbar = fig.colorbar(sm, ax=ax, extend='both', orientation='vertical', fraction=0.046, pad=0.04)
-        cbar.set_label("Zonal mean zonal wind (m/s)", labelpad=10, fontsize=16)
-        cbar.set_ticks([i for i in range(-70, 80, 10)])
-        cbar.ax.tick_params(labelsize=12)
-    if p == 3 and d:
-        sm = mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(-4, 4), cmap=cmap)
-        sm.set_array([])
-        cbar = fig.colorbar(sm, ax=ax, extend='both', orientation='vertical', fraction=0.046, pad=0.04)
-        cbar.set_label("Zonal mean temperature (K)", labelpad=10, fontsize=16)
-        cbar.set_ticks([i for i in range(-4, 5)])
-        cbar.ax.tick_params(labelsize=12)
-    if p == 3 and not d:
-        sm = mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(190, 270), cmap=cmap)
-        sm.set_array([])
-        cbar = fig.colorbar(sm, ax=ax, extend='both', orientation='vertical', fraction=0.046, pad=0.04)
-        cbar.set_label("Zonal mean temperature (K)", labelpad=10, fontsize=16)
-        cbar.set_ticks([i for i in range(190, 280, 10)])
-        cbar.ax.tick_params(labelsize=12)
-    if p == 6 and d:
-        sm = mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(-4, 4), cmap=cmap)
-        sm.set_array([])
-        cbar = fig.colorbar(sm, ax=ax, extend='both', orientation='vertical', fraction=0.046, pad=0.04)
-        cbar.set_label("Zonal mean zonal wind (m/s)", labelpad=10, fontsize=16)
-        cbar.set_ticks([i for i in range(-4, 5)])
-        cbar.ax.tick_params(labelsize=12)
+    # Colorbar
+    sm = mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=vmin, vmax=vmax), cmap=cmap)
+    sm.set_array([])
+    cbar = plt.colorbar(sm, ax=ax, extend='both', orientation='vertical', fraction=0.046, pad=0.04)
+    if d:
+        cbar.set_label("Zonal mean zonal wind (m/s)", fontsize=14)
+    else:
+        cbar.set_label("Zonal mean temperature (K)", fontsize=14)
+
     return cont
 
-eu, ti, p = euf()
-et = etf()
-mu = muf()
-mt = mtf()
-ju, _, _ = juf()
-jt = jtf()
+# --- Hlavní část ---
+datasets_list = [
+    #("ERA5", euf, etf),
+    ("MERRA2", muf, mtf),
+    #("JRA-3Q", juf, jtf),
+    #("JAWARA", wuf, wtf)
+]
 
-lists_to_diff_list(eu, mu, ti, p, f"csv_diff/e_vs_m_u_{rok}.csv")
-lists_to_diff_list(et, mt, ti, p, f"csv_diff/e_vs_m_t_{rok}.csv")
-lists_to_diff_list(mu, ju, ti, p, f"csv_diff/m_vs_j_u_{rok}.csv")
-lists_to_diff_list(mt, jt, ti, p, f"csv_diff/m_vs_j_t_{rok}.csv")
-lists_to_diff_list(eu, ju, ti, p, f"csv_diff/e_vs_j_u_{rok}.csv")
-lists_to_diff_list(et, jt, ti, p, f"csv_diff/e_vs_j_t_{rok}.csv")
+results = []
 
-eu_arr = np.array(eu)
-mu_arr = np.array(mu)
-et_arr = np.array(et)
-mt_arr = np.array(mt)
+for name, fu, ft in datasets_list:
+    u_data, ti, p = fu()
+    t_data, _, _ = ft()  # u temp vrací také pressure, ale použijeme ti z u_data
 
-eu_mu_diff = eu_arr - mu_arr
-eu_ju_diff = eu_arr - ju
-mu_ju_diff = mu_arr - ju
+    # Ujistíme se, že pole jsou homogenní
+    u_data = np.array(u_data, dtype=float)
+    t_data = np.array(t_data, dtype=float)
 
-et_mt_diff = et_arr - mt_arr
-et_jt_diff = et_arr - jt
-mt_jt_diff = mt_arr - jt
+    results.append({
+        "name": name,
+        "u": u_data,
+        "t": t_data,
+        "time": ti,
+        "pressure": p
+    })
 
-vmin_wind = min(np.min(eu_arr), np.min(mu_arr), np.min(ju))
-vmax_wind = max(np.max(eu_arr), np.max(mu_arr), np.max(ju))
-vmin_temp = min(np.min(et_arr), np.min(mt_arr), np.min(jt))
-vmax_temp = max(np.max(et_arr), np.max(mt_arr), np.max(jt))
+vmin_temp = min(np.min(r["t"]) for r in results)
+vmax_temp = max(np.max(r["t"]) for r in results)
 
-fig, axs = plt.subplots(2, 3, figsize=(24, 14))
+vmin_wind = min(np.min(r["u"]) for r in results)
+vmax_wind = max(np.max(r["u"]) for r in results)
+
+n = len(results)
+fig, axs = plt.subplots(2, n, figsize=(8*n, 12))
+
+if n == 1:
+    axs = np.array([[axs[0]], [axs[1]]])
+
 axs = axs.flatten()
-
-tituly = ["a) ERA5", "b) MERRA2", "c) JRA-3Q", "d)", "e)", "f)"]
-
-data_sady = [et_arr, mt_arr, jt, eu_arr, mu_arr, ju]
-vmin_sady = [vmin_temp]*3 + [vmin_wind]*3
-vmax_sady = [vmax_temp]*3 + [vmax_wind]*3
-
 pp = 0
-for ax, title, data, vmin_, vmax_ in zip(axs, tituly, data_sady, vmin_sady, vmax_sady):
-    pp += 1
-    cbar = vykresli(ax, data, title, ti, p, vmin=vmin_, vmax=vmax_, p=pp)
-fig.suptitle(f"SSW Southern hemisphere {rok} winter\n", fontsize=20, weight='bold')
 
+for i, r in enumerate(results):
+    full_pressure = np.array(r["pressure"], dtype=float)
+    yticks = full_pressure[(full_pressure <= 103) & (full_pressure >= 0.1)]
+    yticks = yticks[::4]
+    ytick_indices = [j for j, val in enumerate(full_pressure) if val in yticks]
+
+    t_data_sel = r["t"][:, ytick_indices]
+    u_data_sel = r["u"][:, ytick_indices]
+
+    pp += 1
+    vykresli(
+        axs[i],
+        t_data_sel,
+        f"{chr(97+i)}) {r['name']}",
+        r["time"],
+        yticks,
+        yticks,
+        vmin=vmin_temp,
+        vmax=vmax_temp,
+        p=pp,
+        datasets=n,
+        d=False
+    )
+
+    pp += 1
+    vykresli(
+        axs[i+n],
+        u_data_sel,
+        "",
+        r["time"],
+        yticks,
+        yticks,
+        vmin=vmin_wind,
+        vmax=vmax_wind,
+        p=pp,
+        datasets=n,
+        d=True
+    )
+
+fig.suptitle(f"SSW Northern hemisphere {rok} - {rok + 1} winter\n", fontsize=20, weight='bold')
 plt.tight_layout()
-fig.savefig(f"graphs/All_{rok}.png")
+fig.savefig(f"graphs/{rok}.png")
 plt.close(fig)
-
-fig_all_diff, axs_all = plt.subplots(2, 3, figsize=(24, 14))
-axs_all = axs_all.flatten()
-
-tituly_diff_all = ["a) ERA5 vs. MERRA2", "b) ERA5 vs. JRA-3Q", "c) MERRA2 vs. JRA-3Q", "d)", "e)", "f)"]
-pp = 0
-data_diff_all = [et_mt_diff, et_jt_diff, mt_jt_diff, eu_mu_diff, eu_ju_diff, mu_ju_diff]
-vlims_diff = [np.max(np.abs(d)) for d in data_diff_all]
-
-for ax, title, data, vlim in zip(axs_all, tituly_diff_all, data_diff_all, vlims_diff):
-    pp += 1
-    cbar = vykresli(ax, data, title, ti, p, vmin=-vlim, vmax=vlim, p=pp, d=True)
-fig_all_diff.suptitle(f"SSW Southern hemisphere {rok} winter\n", fontsize=20, weight='bold')
-
-plt.tight_layout()
-fig_all_diff.savefig(f"graphs/All_differences_{rok}.png")
-plt.close(fig_all_diff)
-
-detailni_indexy = [i for i, hladina in enumerate(p) if 1 <= hladina <= 10]
-
-def vyber_detailni_hladiny(data, indexy):
-    data_np = np.array(data)
-    if data_np.ndim == 3:
-        return data_np[:, indexy, :, :]
-    elif data_np.ndim == 2:
-        return data_np[:, indexy]
-    else:
-        return data_np
-
-detail_eu = vyber_detailni_hladiny(eu_arr, detailni_indexy)
-detail_mu = vyber_detailni_hladiny(mu_arr, detailni_indexy)
-detail_ju = vyber_detailni_hladiny(ju, detailni_indexy)
-detail_et = vyber_detailni_hladiny(et_arr, detailni_indexy)
-detail_mt = vyber_detailni_hladiny(mt_arr, detailni_indexy)
-detail_jt = vyber_detailni_hladiny(jt, detailni_indexy)
-
-detail_eu_mu_diff = detail_eu - detail_mu
-detail_eu_ju_diff = detail_eu - detail_ju
-detail_mu_ju_diff = detail_mu - detail_ju
-detail_et_mt_diff = detail_et - detail_mt
-detail_et_jt_diff = detail_et - detail_jt
-detail_mt_jt_diff = detail_mt - detail_jt
-
-detail_p = [p[i] for i in detailni_indexy]
-
-detail_vmin_wind = min(np.min(detail_eu), np.min(detail_mu), np.min(detail_ju))
-detail_vmax_wind = max(np.max(detail_eu), np.max(detail_mu), np.max(detail_ju))
-detail_vmin_temp = min(np.min(detail_et), np.min(detail_mt), np.min(detail_jt))
-detail_vmax_temp = max(np.max(detail_et), np.max(detail_mt), np.max(detail_jt))
-
-fig_detail, axs_detail = plt.subplots(2, 3, figsize=(24, 14))
-axs_detail = axs_detail.flatten()
-
-tituly_detail = ["a) ERA5", "b) MERRA2", "c) JRA-3Q", "d)", "e)", "f)"]
-
-data_sady_detail = [detail_et, detail_mt, detail_jt, detail_eu, detail_mu, detail_ju]
-vmin_sady_detail = [detail_vmin_temp]*3 + [detail_vmin_wind]*3
-vmax_sady_detail = [detail_vmax_temp]*3 + [detail_vmax_wind]*3
-
-pp = 0
-for ax, title, data, vmin_, vmax_ in zip(axs_detail, tituly_detail, data_sady_detail, vmin_sady_detail, vmax_sady_detail):
-    pp += 1
-    cbar = vykresli(ax, data, title, ti, detail_p, vmin=vmin_, vmax=vmax_, p=pp)
-fig_detail.suptitle(f"SSW Southern hemisphere {rok} winter\n", fontsize=20, weight='bold')
-
-plt.tight_layout()
-fig_detail.savefig(f"graphs/All_detailed_1_10_{rok}.png")
-plt.close(fig_detail)
-
-fig_detail_diff, axs_detail_diff = plt.subplots(2, 3, figsize=(24, 14))
-axs_detail_diff = axs_detail_diff.flatten()
-
-tituly_diff_detail = ["a) ERA5 vs. MERRA2", "b) ERA5 vs. JRA-3Q", "c) MERRA2 vs. JRA-3Q", "d)", "e)", "f)"]
-
-data_diff_detail = [detail_et_mt_diff, detail_et_jt_diff, detail_mt_jt_diff, detail_eu_mu_diff, detail_eu_ju_diff, detail_mu_ju_diff]
-vlims_diff_detail = [np.max(np.abs(d)) for d in data_diff_detail]
-
-pp = 0
-for ax, title, data, vlim in zip(axs_detail_diff, tituly_diff_detail, data_diff_detail, vlims_diff_detail):
-    pp += 1
-    cbar = vykresli(ax, data, title, ti, detail_p, vmin=-vlim, vmax=vlim, p=pp, d=True)
-fig_detail_diff.suptitle(f"SSW Southern hemisphere {rok} winter\n", fontsize=20, weight='bold')
-
-plt.tight_layout()
-fig_detail_diff.savefig(f"graphs/All_differences_detailed_1_10_{rok}.png")
-plt.close(fig_detail_diff)
-
-fig, ax = plt.subplots(3, 1, figsize=(10.5, 10.5), sharex=True)
-
-dates = ['2005-11-01', '2005-11-15', '2005-11-30', '2005-12-15', '2005-12-30','2006-01-15', '2006-01-30', '2006-02-15', '2006-02-28', '2006-03-15', '2006-03-31'] # Replace with the dates you need as major ticks
-date_ticks = pd.to_datetime(dates)
-date_ticks_mpl = mdates.date2num(date_ticks)
-start_date = date_ticks[0] - pd.Timedelta(days=1)
-end_date = date_ticks[-1] + pd.Timedelta(days=1)
-ax[0].set_xlim([start_date, end_date])
-ax[1].set_xlim([start_date, end_date])
-ax[2].set_xlim([start_date, end_date])
-ax[0].set_xticks(date_ticks_mpl)
-ax[1].set_xticks(date_ticks_mpl)
-ax[2].set_xticks(date_ticks_mpl)

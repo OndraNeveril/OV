@@ -4,23 +4,28 @@ import os
 import shutil
 import subprocess
 
+while True:
+    rok = int(input("Který rok? "))
+    if rok in [2008, 2012, 2014, 2019]:
+        break
+
 download_folder = "/home/ondrej/Downloads"
-destination_folder = "/media/ondrej/f33d1d42-ade5-41fb-98df-bd6fefb6cf63/dokument/AV/2025 - stratosferické ohřevy/OV/Merra_2002"
+destination_folder = f"/media/ondrej/f33d1d42-ade5-41fb-98df-bd6fefb6cf63/dokument/AV/2025 - stratosferické ohřevy/OV/m{rok}"
 valid_extensions = [".nc", ".nc4"]
 
-opakovat = [37, 45, 50, 54, 61, 72, 85, 88, 90, 95, 103, 105]  # zde nastav indexy řádků v s2002.txt, které chceš stáhnout znovu
+opakovat = []
 
-default_timeout = 60
-extra_timeout = 180
-check_interval = 15
+default_timeout = 20
+extra_timeout = 40
+check_interval = 20
 os.makedirs(destination_folder, exist_ok=True)
 
-with open("s2002.txt") as file:
+with open(f"{rok}.txt") as file:
     lines = file.readlines()
 
 for x, url in enumerate(lines):
-    if x not in opakovat:
-       continue
+    #if x not in opakovat:
+    #   continue
 
     url = url.strip()
     if not url:

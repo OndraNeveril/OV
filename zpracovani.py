@@ -3,11 +3,13 @@ import numpy as np
 import os
 from datetime import datetime, timedelta
 
+# --- výběr roku ---
 while True:
     rok = int(input("Který rok? "))
     if rok in [2008, 2012, 2014, 2019]:
         break
 
+# --- Funkce pro datum ---
 def den_datum(den, rok, *p):
     prvni_den = datetime(rok, 1, 1)
     if p:
@@ -38,7 +40,12 @@ def dates(s, inp, out, x):
         x += len(inp.variables['time'][:])
     return out, x
 
+# --- Pomocná funkce av() ---
 def av(inp, out, x):
+    """
+    Agreguje a průměruje data přes vnitřní dimenze (např. lat/lon)
+    a přidává je do seznamu out. Vrací aktualizovaný index a out.
+    """
     for i in range(len(inp)):
         out.append([])
         for j in range(len(inp[0])):
@@ -48,14 +55,14 @@ def av(inp, out, x):
     x += len(inp)
     return x, out
 
+# --- Funkce pro průměrování po 8 a 4 ---
 def prumeruj_po_8(data):
     n = len(data)
     nove_data = []
     for i in range(0, n, 8):
         blok = data[i:i+8]
         if len(blok) == 8:
-            avg = np.mean(blok, axis=0)
-            nove_data.append(avg)
+            nove_data.append(np.mean(blok, axis=0))
     return np.array(nove_data)
 
 def prumeruj_po_4(data):
@@ -64,10 +71,10 @@ def prumeruj_po_4(data):
     for i in range(0, n, 4):
         blok = data[i:i+4]
         if blok.shape[0] == 4:
-            avg = np.mean(blok, axis=0)
-            nove_data.append(avg)
+            nove_data.append(np.mean(blok, axis=0))
     return np.array(nove_data)
 
+# --- Výběr šířky ---
 def vyber_sirky(dataset):
     for key in ['latitude', 'lat']:
         if key in dataset.variables:
@@ -78,150 +85,187 @@ def vyber_sirky(dataset):
     indexy = np.where((sirky >= -90) & (sirky <= -60))[0]
     return indexy
 
-
+# --- ERA funkce ---
 def euf():
     folder = "./Era_2019" if rok == 2019 else "./Era_2002"
-    files = ["eu6.nc", "eu7.nc", "eu8.nc", "eu9.nc"] if rok == 2019 else ["eu208.nc", "eu209.nc", "eu210.nc", "eu211.nc"]
+    files = ["eu6.nc","eu7.nc","eu8.nc","eu9.nc"] if rok == 2019 else ["eu208.nc","eu209.nc","eu210.nc","eu211.nc"]
     data, time_labels = [], []
     x = z = 0
     for f in files:
         dataset = Dataset(os.path.join(folder, f))
         lat_idx = vyber_sirky(dataset)
         var_data = dataset.variables['u'][:, :, lat_idx, :]
+        var_data = np.mean(var_data, axis=(2,3))
+        start_date = "01/06/2019" if rok == 2019 else "01/08/2002"
+        time_labels, z = dates(start_date, dataset, time_labels, z)
+        data.extend(var_data)
         pressure_levels = dataset.variables['pressure_level'][:].astype(int)
-        if rok == 2002:
-            time_labels, z = dates("01/08/2002", dataset, time_labels, z)
-        else:
-            time_labels, z = dates("01/06/2019", dataset, time_labels, z)
-        x, data = av(var_data, data, x)
-    return data, time_labels, pressure_levels
-
+    return np.array(data), time_labels, pressure_levels
 
 def etf():
     folder = "./Era_2019" if rok == 2019 else "./Era_2002"
-    files = ["et6.nc", "et7.nc", "et8.nc", "et9.nc"] if rok == 2019 else ["et208.nc", "et209.nc", "et210.nc", "et211.nc"]
-    data = []
-    x = 0
+    files = ["et6.nc","et7.nc","et8.nc","et9.nc"] if rok == 2019 else ["et208.nc","et209.nc","et210.nc","et211.nc"]
+    data, time_labels = [], []
+    x = z = 0
     for f in files:
         dataset = Dataset(os.path.join(folder, f))
         lat_idx = vyber_sirky(dataset)
         var_data = dataset.variables['t'][:, :, lat_idx, :]
-        x, data = av(var_data, data, x)
-    return data
+        var_data = np.mean(var_data, axis=(2,3))
+        start_date = "01/06/2019" if rok == 2019 else "01/08/2002"
+        time_labels, z = dates(start_date, dataset, time_labels, z)
+        data.extend(var_data)
+        pressure_levels = dataset.variables['pressure_level'][:].astype(int)
+    return np.array(data), time_labels, pressure_levels
 
-
+# --- MERRA ---
 def muf():
-    folder = "./Merra_2019" if rok == 2019 else "./Merra_2002"
-    files = sorted([f for f in os.listdir(folder) if f.endswith(".nc")], key=lambda x: int(x[1:].split('.')[0]))
-    data = []
-    x = 0
+    folder = f"./m{rok}"
+    files = sorted([f for f in os.listdir(folder) if f.endswith(".nc")])
+    data, time_labels = [], []
+    x = z = 0
     for f in files:
         dataset = Dataset(os.path.join(folder, f))
         lat_idx = vyber_sirky(dataset)
         var_data = prumeruj_po_8(dataset.variables['U'][:, :, lat_idx, :])
-        x, data = av(var_data, data, x)
-    return data
-
+        var_data = np.mean(var_data, axis=(2,3))
+        data.extend(var_data)
+        time_labels, z = dates("01/06/2019" if rok==2019 else "01/08/2002", dataset, time_labels, z)
+        pressure_levels = dataset.variables['plev'][:] if 'plev' in dataset.variables else dataset.variables['level'][:]
+    return np.array(data), time_labels, pressure_levels
 
 def mtf():
-    folder = "./Merra_2019" if rok == 2019 else "./Merra_2002"
-    files = sorted([f for f in os.listdir(folder) if f.endswith(".nc")], key=lambda x: int(x[1:].split('.')[0]))
-    data = []
-    x = 0
+    folder = f"./m{rok}"
+    files = sorted([f for f in os.listdir(folder) if f.endswith(".nc")])
+    data, time_labels = [], []
+    x = z = 0
     for f in files:
         dataset = Dataset(os.path.join(folder, f))
         lat_idx = vyber_sirky(dataset)
         var_data = prumeruj_po_8(dataset.variables['T'][:, :, lat_idx, :])
-        x, data = av(var_data, data, x)
-    return data
-
-
-def juf():
-    folder = "./Jra_2019" if rok == 2019 else "./Jra_2002"
-    files = ["ju6.nc", "ju7.nc", "ju8.nc", "ju9.nc"] if rok == 2019 else ["ju208.nc", "ju209.nc", "ju210.nc", "ju211.nc"]
-    data, time_labels = [], []
-    x = z = 0
-    vybrane_tlaky = [100, 70, 50, 30, 20, 10, 7, 5, 3, 2, 1]
-    for f in files:
-        with Dataset(os.path.join(folder, f)) as dataset:
-            lat_idx = vyber_sirky(dataset)
-            all_pressures = dataset.variables['pressure_level'][:]
-            indexy = [i for i, p in enumerate(all_pressures) if p in vybrane_tlaky]
-            indexy = sorted(indexy, key=lambda i: vybrane_tlaky.index(all_pressures[i]))
-            var_data = prumeruj_po_4(dataset.variables['ugrd-pres-an-ll125'][:, :, lat_idx, :])
-            vybrana_data = var_data[:, indexy, :, :]
-            time_labels, z = dates(f"01/06/{rok}", dataset, time_labels, z)
-            x, data = av(vybrana_data, data, x)
-            pressure_levels = all_pressures[indexy]
+        var_data = np.mean(var_data, axis=(2,3))
+        data.extend(var_data)
+        time_labels, z = dates("01/06/2019" if rok==2019 else "01/08/2002", dataset, time_labels, z)
+        pressure_levels = dataset.variables['plev'][:] if 'plev' in dataset.variables else dataset.variables['level'][:]
     return np.array(data), time_labels, pressure_levels
 
+# --- JRA ---
+def juf():
+    folder = "./Jra_2019" if rok == 2019 else "./Jra_2002"
+    files = ["ju6.nc","ju7.nc","ju8.nc","ju9.nc"] if rok == 2019 else ["ju208.nc","ju209.nc","ju210.nc","ju211.nc"]
+    data, time_labels = [], []
+    x = z = 0
+    vybrane_tlaky = [100,70,50,30,20,10,7,5,3,2,1]
+    for f in files:
+        dataset = Dataset(os.path.join(folder, f))
+        lat_idx = vyber_sirky(dataset)
+        all_pressures = dataset.variables['pressure_level'][:]
+        indexy = [i for i, p in enumerate(all_pressures) if p in vybrane_tlaky]
+        indexy = sorted(indexy, key=lambda i: vybrane_tlaky.index(all_pressures[i]))
+        var_data = prumeruj_po_4(dataset.variables['ugrd-pres-an-ll125'][:, :, lat_idx, :])
+        var_data = np.mean(var_data, axis=(2,3))
+        vybrana_data = var_data[:, indexy]
+        data.extend(vybrana_data)
+        time_labels, z = dates(f"01/06/{rok}", dataset, time_labels, z)
+        pressure_levels = all_pressures[indexy]
+    return np.array(data), time_labels, pressure_levels
 
 def jtf():
     folder = "./Jra_2019" if rok == 2019 else "./Jra_2002"
-    files = ["jt6.nc", "jt7.nc", "jt8.nc", "jt9.nc"] if rok == 2019 else ["jt208.nc", "jt209.nc", "jt210.nc", "jt211.nc"]
-    data = []
-    x = 0
-    vybrane_tlaky = [100, 70, 50, 30, 20, 10, 7, 5, 3, 2, 1]
+    files = ["jt6.nc","jt7.nc","jt8.nc","jt9.nc"] if rok == 2019 else ["jt208.nc","jt209.nc","jt210.nc","jt211.nc"]
+    data, time_labels = [], []
+    x = z = 0
+    vybrane_tlaky = [100,70,50,30,20,10,7,5,3,2,1]
     for f in files:
-        with Dataset(os.path.join(folder, f)) as dataset:
-            lat_idx = vyber_sirky(dataset)
-            all_pressures = dataset.variables['pressure_level'][:]
-            indexy = [i for i, p in enumerate(all_pressures) if p in vybrane_tlaky]
-            indexy = sorted(indexy, key=lambda i: vybrane_tlaky.index(all_pressures[i]))
-            var_data = prumeruj_po_4(dataset.variables['tmp-pres-an-ll125'][:, :, lat_idx, :])
-            vybrana_data = var_data[:, indexy, :, :]
-            x, data = av(vybrana_data, data, x)
-    return np.array(data)
+        dataset = Dataset(os.path.join(folder, f))
+        lat_idx = vyber_sirky(dataset)
+        all_pressures = dataset.variables['pressure_level'][:]
+        indexy = [i for i, p in enumerate(all_pressures) if p in vybrane_tlaky]
+        indexy = sorted(indexy, key=lambda i: vybrane_tlaky.index(all_pressures[i]))
+        var_data = prumeruj_po_4(dataset.variables['tmp-pres-an-ll125'][:, :, lat_idx, :])
+        var_data = np.mean(var_data, axis=(2,3))
+        vybrana_data = var_data[:, indexy]
+        data.extend(vybrana_data)
+        time_labels, z = dates(f"01/06/{rok}", dataset, time_labels, z)
+        pressure_levels = all_pressures[indexy]
+    return np.array(data), time_labels, pressure_levels
 
+# --- JAWARA ---
 def wuf():
-    folder = "./Jawara"
+    folder = f"./j{rok}"
     files = sorted([f for f in os.listdir(folder) if f.startswith("U") and f.endswith(".nc")])
-    data = []
-    x = 0
+    data, time_labels = [], []
+    z = 0
+
+    tlak_max = 103.0   # hPa
+    tlak_min = 0.1     # hPa
+
     for f in files:
         dataset = Dataset(os.path.join(folder, f))
 
-        for key in ['latitude', 'lat']:
-            if key in dataset.variables:
-                sirky = dataset.variables[key][:]
-                break
+        # vyber šířky
+        sirky = dataset.variables['latitude'][:] if 'latitude' in dataset.variables else dataset.variables['lat'][:]
+        lat_idx = np.where((sirky >= 60) & (sirky <= 90))[0]
 
-        indexy = np.where((sirky >= 60) & (sirky <= 90))[0]
+        # vyber hladin podle tlaku
+        all_pressures = dataset.variables['level'][:].astype(float)
+        level_idx = np.where((all_pressures <= tlak_max) & (all_pressures >= tlak_min))[0]
+        pressure_levels = all_pressures[level_idx]
 
-        var_data = prumeruj_po_4(dataset.variables['U'][:, :, indexy, :])
+        # vybraná data a průměr přes lat/lon
+        var_data = dataset.variables['u'][:, level_idx, lat_idx, :]
+        var_data = prumeruj_po_4(var_data)
+        var_data = np.mean(var_data, axis=(2,3))
 
-        x, data = av(var_data, data, x)
+        data.extend(var_data)
 
-    pressure_levels = dataset.variables['pressure_level'][:].astype(int)
+        # časové štítky
+        for i in range(var_data.shape[0]):
+            time_labels.append(den_datum(datum_den(f"01/09/{rok}") + z + i, rok))
+        z += var_data.shape[0]
 
-    return np.array(data), pressure_levels
+    return np.array(data), time_labels, pressure_levels
+
 
 def wtf():
-    folder = "./Jawara"
+    folder = f"./j{rok}"
     files = sorted([f for f in os.listdir(folder) if f.startswith("T") and f.endswith(".nc")])
-    data = []
-    x = 0
+    data, time_labels = [], []
+    z = 0
+
+    tlak_max = 103.0   # hPa
+    tlak_min = 0.1     # hPa
+
     for f in files:
         dataset = Dataset(os.path.join(folder, f))
 
-        for key in ['latitude', 'lat']:
-            if key in dataset.variables:
-                sirky = dataset.variables[key][:]
-                break
+        # vyber šířky
+        sirky = dataset.variables['latitude'][:] if 'latitude' in dataset.variables else dataset.variables['lat'][:]
+        lat_idx = np.where((sirky >= 60) & (sirky <= 90))[0]
 
-        indexy = np.where((sirky >= 60) & (sirky <= 90))[0]
+        # vyber hladin podle tlaku
+        all_pressures = dataset.variables['level'][:].astype(float)
+        level_idx = np.where((all_pressures <= tlak_max) & (all_pressures >= tlak_min))[0]
+        pressure_levels = all_pressures[level_idx]
 
-        var_data = prumeruj_po_4(dataset.variables['T'][:, :, indexy, :])
+        # vybraná data a průměr přes lat/lon
+        var_data = dataset.variables['t'][:, level_idx, lat_idx, :]
+        var_data = prumeruj_po_4(var_data)
+        var_data = np.mean(var_data, axis=(2,3))
 
-        x, data = av(var_data, data, x)
+        data.extend(var_data)
 
-    pressure_levels = dataset.variables['pressure_level'][:].astype(int)
+        # časové štítky
+        for i in range(var_data.shape[0]):
+            time_labels.append(den_datum(datum_den(f"01/09/{rok}") + z + i, rok))
+        z += var_data.shape[0]
 
-    return np.array(data), pressure_levels
+    return np.array(data), time_labels, pressure_levels
 
+# --- Export rozdílů ---
 def lists_to_diff_list(l1, l2, x, y, f):
-    o = open(f, "w")
-    o.write("Date, level, difference value\r\n")
-    for i in range(len(x)):
-        for j in range(len(y)):
-            o.write(str(x[i]) + ", " + str(y[j]) +", " + str(l1[i][j] - l2[i][j]) + "\r\n")
+    with open(f, "w") as o:
+        o.write("Date, level, difference value\r\n")
+        for i in range(len(x)):
+            for j in range(len(y)):
+                o.write(f"{x[i]}, {y[j]}, {l1[i][j] - l2[i][j]}\r\n")
