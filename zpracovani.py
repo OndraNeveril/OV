@@ -221,8 +221,8 @@ def wuf():
     data, time_labels = [], []
     z = 0
 
-    tlak_max = 103.0   # hPa
-    tlak_min = 0.1     # hPa
+    tlak_max = 103.0
+    tlak_min = 0.3
 
     for f in files:
         dataset = Dataset(os.path.join(folder, f))
@@ -257,8 +257,8 @@ def wtf():
     data, time_labels = [], []
     z = 0
 
-    tlak_max = 103.0   # hPa
-    tlak_min = 0.1     # hPa
+    tlak_max = 103.0
+    tlak_min = 0.3
 
     for f in files:
         dataset = Dataset(os.path.join(folder, f))

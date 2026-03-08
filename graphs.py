@@ -1,10 +1,12 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
+import matplotlib.ticker as mticker
 from datetime import datetime
 from zpracovani import *
 
-def vykresli(ax, data, title, xlabels, ylabels, yticks, vmin=None, vmax=None, cmap='RdBu_r', p=1, datasets=3, d=False):
+def vykresli(ax, data, title, xlabels, ylabels, yticks, index, ncols,
+             vmin=None, vmax=None, cmap='RdBu_r', d=False):
     data = np.array(data)
     y = np.array(ylabels, dtype=float)
     x = np.arange(len(xlabels))
@@ -17,29 +19,30 @@ def vykresli(ax, data, title, xlabels, ylabels, yticks, vmin=None, vmax=None, cm
                            levels=100)
     else:
         cont = ax.contourf(x, y, data.T, cmap=cmap,
-                           vmin=np.floor(vmin/10)*10 if vmin is not None else None,
+                           vmin=vmin,
                            vmax=vmax,
                            levels=100)
 
+    # Logaritmická osa Y
     ax.set_yscale('log')
     ax.invert_yaxis()
-    ax.yaxis.set_minor_locator(mpl.ticker.NullLocator())
+    ax.yaxis.set_major_locator(mticker.FixedLocator(yticks))
+    ax.yaxis.set_major_formatter(mticker.ScalarFormatter())
+    ax.yaxis.set_minor_locator(mticker.NullLocator())
+    ax.tick_params(axis='y', labelsize=14)
 
-    col = (p - 1) % datasets
-    row = (p - 1) // datasets
+    col = index % ncols
+    row = index // ncols
 
-    # Y osa
+    # Y osa jen levé sloupce
     if col == 0:
         ax.set_ylabel("Pressure level (hPa)", fontsize=16)
-        ax.tick_params(axis='y', labelsize=14)
-        if yticks is not None:
-            # vybereme pouze indexy, které odpovídají yticks
-            indices = [i for i, val in enumerate(y) if val in yticks]
-            ax.set_yticks(y[indices])
-            ax.set_yticklabels([f"{val:.1f}" for val in y[indices]])
-        else:
-            ax.set_yticks(y)
-            ax.set_yticklabels([f"{val:.1f}" for val in y])
+        ax.set_yticks(yticks)
+        ax.set_yticklabels([f"{val:.1f}" for val in yticks])
+    else:
+        # pravé sloupce žádné Y tick labels
+        ax.set_yticks(yticks)
+        ax.set_yticklabels([])
 
     # X osa
     xticks = []
@@ -57,25 +60,27 @@ def vykresli(ax, data, title, xlabels, ylabels, yticks, vmin=None, vmax=None, cm
     ax.tick_params(axis='x', which='minor', length=3, width=0.7)
     ax.tick_params(axis='x', which='major', length=7, width=1.2)
 
+    # Titulky datasetů
     if row == 0:
         ax.set_title(title, fontsize=16, weight='bold')
 
-    # Colorbar
-    sm = mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=vmin, vmax=vmax), cmap=cmap)
-    sm.set_array([])
-    cbar = plt.colorbar(sm, ax=ax, extend='both', orientation='vertical', fraction=0.046, pad=0.04)
-    if d:
-        cbar.set_label("Zonal mean zonal wind (m/s)", fontsize=14)
-    else:
-        cbar.set_label("Zonal mean temperature (K)", fontsize=14)
+    # Colorbar pro pravé sloupce
+    if col != 0:
+        sm = mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(vmin=vmin, vmax=vmax), cmap=cmap)
+        sm.set_array([])
+        cbar = plt.colorbar(sm, ax=ax, extend='both', orientation='vertical',
+                            fraction=0.046, pad=0.04)
+        if d:
+            cbar.set_label("Zonal mean zonal wind (m/s)", fontsize=14)
+        else:
+            cbar.set_label("Zonal mean temperature (K)", fontsize=14)
 
     return cont
 
+
 # --- Hlavní část ---
 datasets_list = [
-    #("ERA5", euf, etf),
     ("MERRA2", muf, mtf),
-    #("JRA-3Q", juf, jtf),
     ("JAWARA", wuf, wtf)
 ]
 
@@ -83,9 +88,8 @@ results = []
 
 for name, fu, ft in datasets_list:
     u_data, ti, p = fu()
-    t_data, _, _ = ft()  # u temp vrací také pressure, ale použijeme ti z u_data
+    t_data, _, _ = ft()
 
-    # Ujistíme se, že pole jsou homogenní
     u_data = np.array(u_data, dtype=float)
     t_data = np.array(t_data, dtype=float)
 
@@ -99,7 +103,6 @@ for name, fu, ft in datasets_list:
 
 vmin_temp = min(np.min(r["t"]) for r in results)
 vmax_temp = max(np.max(r["t"]) for r in results)
-
 vmin_wind = min(np.min(r["u"]) for r in results)
 vmax_wind = max(np.max(r["u"]) for r in results)
 
@@ -110,44 +113,43 @@ if n == 1:
     axs = np.array([[axs[0]], [axs[1]]])
 
 axs = axs.flatten()
-pp = 0
 
 for i, r in enumerate(results):
     full_pressure = np.array(r["pressure"], dtype=float)
-    yticks = full_pressure[(full_pressure <= 103) & (full_pressure >= 0.1)]
+    yticks = full_pressure[(full_pressure <= 103) & (full_pressure >= 0.3)]
     yticks = yticks[::4]
     ytick_indices = [j for j, val in enumerate(full_pressure) if val in yticks]
 
     t_data_sel = r["t"][:, ytick_indices]
     u_data_sel = r["u"][:, ytick_indices]
 
-    pp += 1
+    # levý horní graf: T
     vykresli(
         axs[i],
         t_data_sel,
         f"{chr(97+i)}) {r['name']}",
         r["time"],
-        yticks,
-        yticks,
+        full_pressure[ytick_indices],
+        full_pressure[ytick_indices],
+        index=i,
+        ncols=n,
         vmin=vmin_temp,
         vmax=vmax_temp,
-        p=pp,
-        datasets=n,
         d=False
     )
 
-    pp += 1
+    # pravý dolní graf: U
     vykresli(
         axs[i+n],
         u_data_sel,
         "",
         r["time"],
-        yticks,
-        yticks,
+        full_pressure[ytick_indices],
+        full_pressure[ytick_indices],
+        index=i+n,
+        ncols=n,
         vmin=vmin_wind,
         vmax=vmax_wind,
-        p=pp,
-        datasets=n,
         d=True
     )
 
