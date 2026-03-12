@@ -293,3 +293,45 @@ def lists_to_diff_list(l1, l2, x, y, f):
         for i in range(len(x)):
             for j in range(len(y)):
                 o.write(f"{x[i]}, {y[j]}, {l1[i][j] - l2[i][j]}\r\n")
+
+def jawara_lat_mean(varname, level, lat_list):
+
+    folder = f"./Jawara/j{rok}"
+
+    if varname == "u":
+        files = sorted([f for f in os.listdir(folder) if f.startswith("U") and f.endswith(".nc")])
+    elif varname == "t":
+        files = sorted([f for f in os.listdir(folder) if f.startswith("T") and f.endswith(".nc")])
+
+    data = []
+    time_labels = []
+    z = 0
+
+    for f in files:
+        dataset = Dataset(os.path.join(folder, f))
+
+        lats = dataset.variables["latitude"][:]
+        levs = dataset.variables["level"][:]
+
+        lat_indices = [np.argmin(np.abs(lats - lat)) for lat in lat_list]
+        lev_index = np.argmin(np.abs(levs - level))
+
+        var_data = dataset.variables[varname][:, lev_index, lat_indices, :]
+
+        # průměr přes longitude
+        var_data = np.mean(var_data, axis=2)
+
+        # průměr po 4 časových krocích (6h → 1 den)
+        var_data = prumeruj_po_4(var_data)
+
+        data.extend(var_data)
+
+        # časové popisky (po dnech)
+        for i in range(var_data.shape[0]):
+            time_labels.append(
+                den_datum(datum_den(f"01/12/{rok}") + z + i, rok)
+            )
+
+        z += var_data.shape[0]
+
+    return np.array(data), time_labels, lats[lat_indices]
