@@ -92,6 +92,16 @@ ti = ti[start:end]
 t_data = t_data[start:end, :]
 u_data = u_data[start:end, :]
 
+# --- anomálie vůči prvním 14 dnům ---
+t_ref = np.mean(t_data[:14, :], axis=0)
+u_ref = np.mean(u_data[:14, :], axis=0)
+
+t_anom = t_data - t_ref
+u_anom = u_data - u_ref
+
+t_lim = max(abs(np.min(t_anom)), abs(np.max(t_anom)))
+u_lim_anom = max(abs(np.min(u_anom)), abs(np.max(u_anom)))
+
 # --- výběr nejbližší latitude ---
 _, lat1_real, lat1_disp, t1_line, u1_line = get_closest_lat(lat_choice1, lats, t_data, u_data)
 _, lat2_real, lat2_disp, t2_line, u2_line = get_closest_lat(lat_choice2, lats, t_data, u_data)
@@ -176,6 +186,73 @@ fig.savefig(f"graphs_lat/{rok}_lat_{level}.png")
 plt.close(fig)
 
 fig, axs = plt.subplots(2, 1, figsize=(16, 10))
+axs = axs.flatten()
+
+# --- teplota anomálie ---
+pcm1 = vykresli(
+    axs[0],
+    t_anom,
+    ti,
+    lats,
+    vmin=-t_lim,
+    vmax=t_lim,
+    d=True
+)
+
+sm = mpl.cm.ScalarMappable(
+    norm=mpl.colors.Normalize(vmin=-t_lim, vmax=t_lim),
+    cmap='RdBu_r'
+)
+sm.set_array([])
+
+cbar1 = plt.colorbar(
+    sm,
+    ax=axs[0],
+    fraction=0.046,
+    pad=0.04,
+    extend="both"
+)
+
+cbar1.set_label("Temperature difference (K)", fontsize=14)
+
+# --- vítr anomálie ---
+pcm2 = vykresli(
+    axs[1],
+    u_anom,
+    ti,
+    lats,
+    vmin=-u_lim_anom,
+    vmax=u_lim_anom,
+    d=True
+)
+
+sm = mpl.cm.ScalarMappable(
+    norm=mpl.colors.Normalize(vmin=-u_lim_anom, vmax=u_lim_anom),
+    cmap='RdBu_r'
+)
+sm.set_array([])
+
+cbar2 = plt.colorbar(
+    sm,
+    ax=axs[1],
+    fraction=0.046,
+    pad=0.04,
+    extend="both"
+)
+
+cbar2.set_label("Zonal wind difference (m/s) (m/s)", fontsize=14)
+
+fig.suptitle(
+    f"JAWARA zonal mean – {level} hPa {rok}",
+    fontsize=20,
+    weight="bold"
+)
+
+plt.tight_layout()
+fig.savefig(f"graphs_lat/{rok}_lat_{level}_diff.png")
+plt.close(fig)
+
+fig, axs = plt.subplots(2, 1, figsize=(16, 10))
 
 # --- teplota ---
 axs[0].plot(ti, t1_line, label=f"{lat1_disp}°N")
@@ -222,7 +299,7 @@ for ax in axs:
     # --- střední den ---
     ax.axvline(center_local_idx, linestyle='--', linewidth=1)
 
-fig.suptitle(f"Time series – {level} hPa {rok}", fontsize=20)
+fig.suptitle(f"JAWARA Time series – {level} hPa {rok}", fontsize=20, weight="bold")
 
 plt.tight_layout()
 fig.savefig(f"graphs_lat/{rok}_timeseries_{level}.png")
