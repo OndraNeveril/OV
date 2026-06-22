@@ -3,11 +3,13 @@ import numpy as np
 import os
 from datetime import datetime, timedelta
 
+slozka = "/media/ondra/LaCie/Otevřená věda"
+
 # --- výběr roku ---
-while True:
-    rok = int(input("Který rok? "))
-    if rok in [2008, 2012, 2014, 2019]:
-        break
+#while True:
+    #rok = int(input("Který rok? "))
+    #if rok in range(4, 24):
+    #    break
 
 # --- Funkce pro datum ---
 def den_datum(den, rok, *p):
@@ -281,7 +283,7 @@ def wtf():
 
         # časové štítky
         for i in range(var_data.shape[0]):
-            time_labels.append(den_datum(datum_den(f"01/09/{rok}") + z + i, rok))
+            time_labels.append(den_datum(datum_den(f"01/09/{rok+2000}") + z + i, rok+2000))
         z += var_data.shape[0]
 
     return np.array(data), time_labels, pressure_levels
@@ -294,9 +296,9 @@ def lists_to_diff_list(l1, l2, x, y, f):
             for j in range(len(y)):
                 o.write(f"{x[i]}, {y[j]}, {l1[i][j] - l2[i][j]}\r\n")
 
-def jawara_lat_mean(varname, level, lat_list):
+def jawara_lat_mean(varname, level, lat_list, rok):
 
-    folder = f"./Jawara/j{rok}"
+    folder = slozka+f"/Jawara/{rok+2000}-{rok+2001}"
 
     if varname == "u":
         files = sorted([f for f in os.listdir(folder) if f.startswith("U") and f.endswith(".nc")])
@@ -329,7 +331,7 @@ def jawara_lat_mean(varname, level, lat_list):
         # časové popisky (po dnech)
         for i in range(var_data.shape[0]):
             time_labels.append(
-                den_datum(datum_den(f"01/12/{rok}") + z + i, rok)
+                den_datum(datum_den(f"01/12/{2000+rok}") + z + i, rok+2000)
             )
 
         z += var_data.shape[0]

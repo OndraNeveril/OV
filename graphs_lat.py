@@ -70,237 +70,245 @@ def get_closest_lat(lat_choice, lats, t_data, u_data):
 
 # --- nastavení ---
 latitudes = [x for x in range(40, 85, 5)]
-level = float(input("Zadejte tlakovou hladinu: "))
+levels = [0.8, 0.05, 0.0018, 7e-05, 1e-05]
+heights = [50, 70, 90, 110, 130]
 lat_choice1 = 60
 lat_choice2 = 80
-center_date = "22/01/2009"
 
-# --- načtení dat ---
-u_data, ti, lats = jawara_lat_mean("u", level, latitudes)
-t_data, _, _ = jawara_lat_mean("t", level, latitudes)
+for rok in range(4, 25):
+    center_date = f"22/01/{rok + 2001}"
 
-u_data = np.array(u_data, dtype=float)
-t_data = np.array(t_data, dtype=float)
+    for i in range(5):
+        # --- načtení dat ---
+        level = levels[i]
+        height = heights[i]
 
-# --- ořez časového období ---
-center_idx = ti.index(center_date)
+        u_data, ti, lats = jawara_lat_mean("u", level, latitudes, rok)
+        t_data, _, _ = jawara_lat_mean("t", level, latitudes, rok)
 
-start = center_idx - 14
-end = center_idx + 14 + 1  # +1 protože slice je exclusive
+        u_data = np.array(u_data, dtype=float)
+        t_data = np.array(t_data, dtype=float)
 
-ti = ti[start:end]
-t_data = t_data[start:end, :]
-u_data = u_data[start:end, :]
+        # --- ořez časového období ---
+        center_idx = ti.index(center_date)
 
-# --- anomálie vůči prvním 14 dnům ---
-t_ref = np.mean(t_data[:14, :], axis=0)
-u_ref = np.mean(u_data[:14, :], axis=0)
+        start = center_idx - 14
+        end = center_idx + 14 + 1  # +1 protože slice je exclusive
 
-t_anom = t_data - t_ref
-u_anom = u_data - u_ref
+        ti = ti[start:end]
+        t_data = t_data[start:end, :]
+        u_data = u_data[start:end, :]
 
-t_lim = max(abs(np.min(t_anom)), abs(np.max(t_anom)))
-u_lim_anom = max(abs(np.min(u_anom)), abs(np.max(u_anom)))
+        # --- anomálie vůči prvním 14 dnům ---
+        t_ref = np.mean(t_data[:14, :], axis=0)
+        u_ref = np.mean(u_data[:14, :], axis=0)
 
-# --- výběr nejbližší latitude ---
-_, lat1_real, lat1_disp, t1_line, u1_line = get_closest_lat(lat_choice1, lats, t_data, u_data)
-_, lat2_real, lat2_disp, t2_line, u2_line = get_closest_lat(lat_choice2, lats, t_data, u_data)
+        t_anom = t_data - t_ref
+        u_anom = u_data - u_ref
 
-# --- škály ---
-vmin_temp = np.min(t_data)
-vmax_temp = np.max(t_data)
+        t_lim = max(abs(np.min(t_anom)), abs(np.max(t_anom)))
+        u_lim_anom = max(abs(np.min(u_anom)), abs(np.max(u_anom)))
 
-u_limit = max(abs(np.min(u_data)), abs(np.max(u_data)))
+        # --- výběr nejbližší latitude ---
+        _, lat1_real, lat1_disp, t1_line, u1_line = get_closest_lat(lat_choice1, lats, t_data, u_data)
+        _, lat2_real, lat2_disp, t2_line, u2_line = get_closest_lat(lat_choice2, lats, t_data, u_data)
 
-vmin_wind = -u_limit
-vmax_wind = u_limit
+        # --- škály ---
+        vmin_temp = np.min(t_data)
+        vmax_temp = np.max(t_data)
 
-# --- graf ---
-fig, axs = plt.subplots(2, 1, figsize=(16, 10))
-axs = axs.flatten()
+        u_limit = max(abs(np.min(u_data)), abs(np.max(u_data)))
 
-pcm1 = vykresli(
-    axs[0],
-    t_data,
-    ti,
-    lats,
-    vmin=vmin_temp,
-    vmax=vmax_temp,
-    d=False
-)
+        vmin_wind = -u_limit
+        vmax_wind = u_limit
 
-sm = mpl.cm.ScalarMappable(
-    norm=mpl.colors.Normalize(vmin=vmin_temp, vmax=vmax_temp),
-    cmap='RdBu_r'
-)
+        # --- graf ---
+        fig, axs = plt.subplots(2, 1, figsize=(16, 10))
+        axs = axs.flatten()
 
-sm.set_array([])
+        pcm1 = vykresli(
+            axs[0],
+            t_data,
+            ti,
+            lats,
+            vmin=vmin_temp,
+            vmax=vmax_temp,
+            d=False
+        )
 
-cbar1 = plt.colorbar(
-    sm,
-    ax=axs[0],
-    orientation="vertical",
-    fraction=0.046,
-    pad=0.04,
-    extend="both"
-)
+        sm = mpl.cm.ScalarMappable(
+            norm=mpl.colors.Normalize(vmin=vmin_temp, vmax=vmax_temp),
+            cmap='RdBu_r'
+        )
 
-cbar1.set_label("Zonal mean temperature (K)", fontsize=14)
+        sm.set_array([])
 
-pcm2 = vykresli(
-    axs[1],
-    u_data,
-    ti,
-    lats,
-    vmin=vmin_wind,
-    vmax=vmax_wind,
-    d=True
-)
+        cbar1 = plt.colorbar(
+            sm,
+            ax=axs[0],
+            orientation="vertical",
+            fraction=0.046,
+            pad=0.04,
+            extend="both"
+        )
 
-sm = mpl.cm.ScalarMappable(
-    norm=mpl.colors.Normalize(vmin=vmin_wind, vmax=vmax_wind),
-    cmap='RdBu_r'
-)
+        cbar1.set_label("Zonal mean temperature (K)", fontsize=14)
 
-sm.set_array([])
+        pcm2 = vykresli(
+            axs[1],
+            u_data,
+            ti,
+            lats,
+            vmin=vmin_wind,
+            vmax=vmax_wind,
+            d=True
+        )
 
-cbar2 = plt.colorbar(
-    sm,
-    ax=axs[1],
-    orientation="vertical",
-    fraction=0.046,
-    pad=0.04,
-    extend="both"
-)
+        sm = mpl.cm.ScalarMappable(
+            norm=mpl.colors.Normalize(vmin=vmin_wind, vmax=vmax_wind),
+            cmap='RdBu_r'
+        )
 
-cbar2.set_label("Zonal mean zonal wind (m/s)", fontsize=14)
+        sm.set_array([])
 
-fig.suptitle(
-    f"JAWARA zonal mean – {level} hPa {rok}",
-    fontsize=20,
-    weight="bold"
-)
+        cbar2 = plt.colorbar(
+            sm,
+            ax=axs[1],
+            orientation="vertical",
+            fraction=0.046,
+            pad=0.04,
+            extend="both"
+        )
 
-plt.tight_layout()
-fig.savefig(f"graphs_lat/{rok}_lat_{level}.png")
-plt.close(fig)
+        cbar2.set_label("Zonal mean zonal wind (m/s)", fontsize=14)
 
-fig, axs = plt.subplots(2, 1, figsize=(16, 10))
-axs = axs.flatten()
+        fig.suptitle(
+            f"JAWARA zonal mean – {height} km {2000+rok}",
+            fontsize=20,
+            weight="bold"
+        )
 
-# --- teplota anomálie ---
-pcm1 = vykresli(
-    axs[0],
-    t_anom,
-    ti,
-    lats,
-    vmin=-t_lim,
-    vmax=t_lim,
-    d=True
-)
+        plt.tight_layout()
+        fig.savefig(slozka+f"/graphs/{2000+rok}_lat_{height}.png")
+        plt.close(fig)
 
-sm = mpl.cm.ScalarMappable(
-    norm=mpl.colors.Normalize(vmin=-t_lim, vmax=t_lim),
-    cmap='RdBu_r'
-)
-sm.set_array([])
+        fig, axs = plt.subplots(2, 1, figsize=(16, 10))
+        axs = axs.flatten()
 
-cbar1 = plt.colorbar(
-    sm,
-    ax=axs[0],
-    fraction=0.046,
-    pad=0.04,
-    extend="both"
-)
+        # --- teplota anomálie ---
+        pcm1 = vykresli(
+            axs[0],
+            t_anom,
+            ti,
+            lats,
+            vmin=-t_lim,
+            vmax=t_lim,
+            d=True
+        )
 
-cbar1.set_label("Temperature difference (K)", fontsize=14)
+        sm = mpl.cm.ScalarMappable(
+            norm=mpl.colors.Normalize(vmin=-t_lim, vmax=t_lim),
+            cmap='RdBu_r'
+        )
+        sm.set_array([])
 
-# --- vítr anomálie ---
-pcm2 = vykresli(
-    axs[1],
-    u_anom,
-    ti,
-    lats,
-    vmin=-u_lim_anom,
-    vmax=u_lim_anom,
-    d=True
-)
+        cbar1 = plt.colorbar(
+            sm,
+            ax=axs[0],
+            fraction=0.046,
+            pad=0.04,
+            extend="both"
+        )
 
-sm = mpl.cm.ScalarMappable(
-    norm=mpl.colors.Normalize(vmin=-u_lim_anom, vmax=u_lim_anom),
-    cmap='RdBu_r'
-)
-sm.set_array([])
+        cbar1.set_label("Temperature difference (K)", fontsize=14)
 
-cbar2 = plt.colorbar(
-    sm,
-    ax=axs[1],
-    fraction=0.046,
-    pad=0.04,
-    extend="both"
-)
+        # --- vítr anomálie ---
+        pcm2 = vykresli(
+            axs[1],
+            u_anom,
+            ti,
+            lats,
+            vmin=-u_lim_anom,
+            vmax=u_lim_anom,
+            d=True
+        )
 
-cbar2.set_label("Zonal wind difference (m/s) (m/s)", fontsize=14)
+        sm = mpl.cm.ScalarMappable(
+            norm=mpl.colors.Normalize(vmin=-u_lim_anom, vmax=u_lim_anom),
+            cmap='RdBu_r'
+        )
+        sm.set_array([])
 
-fig.suptitle(
-    f"JAWARA zonal mean – {level} hPa {rok}",
-    fontsize=20,
-    weight="bold"
-)
+        cbar2 = plt.colorbar(
+            sm,
+            ax=axs[1],
+            fraction=0.046,
+            pad=0.04,
+            extend="both"
+        )
 
-plt.tight_layout()
-fig.savefig(f"graphs_lat/{rok}_lat_{level}_diff.png")
-plt.close(fig)
+        cbar2.set_label("Zonal wind difference (m/s) (m/s)", fontsize=14)
 
-fig, axs = plt.subplots(2, 1, figsize=(16, 10))
+        fig.suptitle(
+            f"JAWARA zonal mean – {height} km {2000+rok}",
+            fontsize=20,
+            weight="bold"
+        )
 
-# --- teplota ---
-axs[0].plot(ti, t1_line, label=f"{lat1_disp}°N")
-axs[0].plot(ti, t2_line, label=f"{lat2_disp}°N")
+        plt.tight_layout()
+        fig.savefig(slozka+f"/graphs/{2000+rok}_lat_{height}_diff.png")
+        plt.close(fig)
 
-axs[0].set_ylabel("Temperature (K)", fontsize=14)
-axs[0].set_title("Temperature time series", fontsize=16)
-axs[0].legend()
+        fig, axs = plt.subplots(2, 1, figsize=(16, 10))
 
-# --- vítr ---
-axs[1].plot(ti, u1_line, label=f"{lat1_disp}°N")
-axs[1].plot(ti, u2_line, label=f"{lat2_disp}°N")
+        # --- teplota ---
+        axs[0].plot(ti, t1_line, label=f"{lat1_disp}°N")
+        axs[0].plot(ti, t2_line, label=f"{lat2_disp}°N")
 
-axs[1].set_ylabel("Zonal wind (m/s)", fontsize=14)
-axs[1].set_title("Zonal wind time series", fontsize=16)
-axs[1].legend()
+        axs[0].set_ylabel("Temperature (K)", fontsize=14)
+        axs[0].set_title("Temperature time series", fontsize=16)
+        axs[0].legend()
+
+        # --- vítr ---
+        axs[1].plot(ti, u1_line, label=f"{lat1_disp}°N")
+        axs[1].plot(ti, u2_line, label=f"{lat2_disp}°N")
+
+        axs[1].set_ylabel("Zonal wind (m/s)", fontsize=14)
+        axs[1].set_title("Zonal wind time series", fontsize=16)
+        axs[1].legend()
 
 
-# --- osa x (stejná logika jako máš) ---
-xticks = []
-xticklabels = []
+        # --- osa x (stejná logika jako máš) ---
+        xticks = []
+        xticklabels = []
 
-center_local_idx = len(ti) // 2
+        center_local_idx = len(ti) // 2
 
-for i, label in enumerate(ti):
-    if (i - center_local_idx) % 7 == 0 or i == len(ti) - 1:
-        xticks.append(i)
-        xticklabels.append(format_date_label(label))
+        for i, label in enumerate(ti):
+            if (i - center_local_idx) % 7 == 0 or i == len(ti) - 1:
+                xticks.append(i)
+                xticklabels.append(format_date_label(label))
 
-center_local_idx = len(ti) // 2
+        center_local_idx = len(ti) // 2
 
-for ax in axs:
-    # major ticks (po 5 dnech)
-    ax.set_xticks(xticks)
-    ax.set_xticklabels(xticklabels, fontsize=12, rotation=45)
+        for ax in axs:
+            # major ticks (po 5 dnech)
+            ax.set_xticks(xticks)
+            ax.set_xticklabels(xticklabels, fontsize=12, rotation=45)
 
-    # minor ticks (každý den)
-    minor_xticks = list(range(len(ti)))
-    ax.set_xticks(minor_xticks, minor=True)
+            # minor ticks (každý den)
+            minor_xticks = list(range(len(ti)))
+            ax.set_xticks(minor_xticks, minor=True)
 
-    ax.tick_params(axis='x', which='minor', length=3, width=0.7)
-    ax.tick_params(axis='x', which='major', length=7, width=1.2)
+            ax.tick_params(axis='x', which='minor', length=3, width=0.7)
+            ax.tick_params(axis='x', which='major', length=7, width=1.2)
 
-    # --- střední den ---
-    ax.axvline(center_local_idx, linestyle='--', linewidth=1)
+            # --- střední den ---
+            ax.axvline(center_local_idx, linestyle='--', linewidth=1)
 
-fig.suptitle(f"JAWARA Time series – {level} hPa {rok}", fontsize=20, weight="bold")
+        fig.suptitle(f"JAWARA Time series – {height} km {2000+rok}", fontsize=20, weight="bold")
 
-plt.tight_layout()
-fig.savefig(f"graphs_lat/{rok}_timeseries_{level}.png")
-plt.close(fig)
+        plt.tight_layout()
+        fig.savefig(slozka+f"/graphs/{2000+rok}_timeseries_{height}.png")
+        plt.close(fig)
+    print(f"{2000+rok}-{2001+rok} is done")
