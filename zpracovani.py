@@ -8,7 +8,7 @@ slozka = "/media/ondra/LaCie/Otevřená věda"
 # --- výběr roku ---
 #while True:
     #rok = int(input("Který rok? "))
-    #if rok in range(4, 24):
+    #if rok in range(4, 26):
     #    break
 
 # --- Funkce pro datum ---
@@ -331,7 +331,7 @@ def jawara_lat_mean(varname, level, lat_list, rok):
         # časové popisky (po dnech)
         for i in range(var_data.shape[0]):
             time_labels.append(
-                den_datum(datum_den(f"01/12/{2000+rok}") + z + i, rok+2000)
+                den_datum(datum_den(f"01/11/{2000+rok}") + z + i, rok+2000)
             )
 
         z += var_data.shape[0]

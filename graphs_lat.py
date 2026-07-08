@@ -34,9 +34,12 @@ def vykresli(ax, data, xlabels, ylabels, vmin=None, vmax=None, cmap='RdBu_r', d=
     xticks = []
     xticklabels = []
 
-    center_local_idx = len(xlabels) // 2
-
     for i, label in enumerate(xlabels):
+        if i % 15 == 0 or i == len(xlabels) - 1:
+            xticks.append(i)
+            xticklabels.append(format_date_label(label))
+
+    """for i, label in enumerate(xlabels):
         # každých 7 dní relativně ke středu
         if (i - center_local_idx) % 7 == 0 or i == len(xlabels) - 1:
             xticks.append(i)
@@ -44,7 +47,7 @@ def vykresli(ax, data, xlabels, ylabels, vmin=None, vmax=None, cmap='RdBu_r', d=
 
     # --- střední den ---
     center_local_idx = len(xlabels) // 2
-    ax.axvline(center_local_idx, linestyle='--', linewidth=1)
+    ax.axvline(center_local_idx, linestyle='--', linewidth=1)"""
 
     ax.set_xticks(xticks)
     ax.set_xticklabels(xticklabels, fontsize=12, rotation=45)
@@ -75,8 +78,7 @@ heights = [50, 70, 90, 110, 130]
 lat_choice1 = 60
 lat_choice2 = 80
 
-for rok in range(4, 25):
-    center_date = f"22/01/{rok + 2001}"
+for rok in range(10, 11):
 
     for i in range(5):
         # --- načtení dat ---
@@ -90,10 +92,8 @@ for rok in range(4, 25):
         t_data = np.array(t_data, dtype=float)
 
         # --- ořez časového období ---
-        center_idx = ti.index(center_date)
-
-        start = center_idx - 14
-        end = center_idx + 14 + 1  # +1 protože slice je exclusive
+        start = 0
+        end = len(ti) - 1
 
         ti = ti[start:end]
         t_data = t_data[start:end, :]
@@ -278,33 +278,27 @@ for rok in range(4, 25):
         axs[1].legend()
 
 
-        # --- osa x (stejná logika jako máš) ---
+        # --- osa x---
         xticks = []
         xticklabels = []
 
         center_local_idx = len(ti) // 2
 
         for i, label in enumerate(ti):
-            if (i - center_local_idx) % 7 == 0 or i == len(ti) - 1:
+            if i % 15 == 0 or i == len(ti) - 1:
                 xticks.append(i)
                 xticklabels.append(format_date_label(label))
 
-        center_local_idx = len(ti) // 2
-
         for ax in axs:
-            # major ticks (po 5 dnech)
             ax.set_xticks(xticks)
             ax.set_xticklabels(xticklabels, fontsize=12, rotation=45)
 
-            # minor ticks (každý den)
             minor_xticks = list(range(len(ti)))
             ax.set_xticks(minor_xticks, minor=True)
 
             ax.tick_params(axis='x', which='minor', length=3, width=0.7)
             ax.tick_params(axis='x', which='major', length=7, width=1.2)
 
-            # --- střední den ---
-            ax.axvline(center_local_idx, linestyle='--', linewidth=1)
 
         fig.suptitle(f"JAWARA Time series – {height} km {2000+rok}", fontsize=20, weight="bold")
 
